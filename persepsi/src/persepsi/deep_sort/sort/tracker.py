@@ -34,7 +34,7 @@ class Tracker:
     tracks : List[Track]
         The list of active tracks at the current time step.
     """
-    GATING_THRESHOLD = np.sqrt(kalman_filter.chi2inv95[4])
+    GATING_THRESHOLD = np.sqrt(kalman_filter.chi2inv95[5])
 
     def __init__(self, metric, max_iou_distance=0.9, max_age=30, n_init=3, _lambda=0):
         self.metric = metric
@@ -115,7 +115,7 @@ class Tracker:
                     tracks[track_idx].mean, tracks[track_idx].covariance, msrs, color_intrin, False
                 )
             ) / self.GATING_THRESHOLD
-        pos_gate = pos_cost > 1.0
+        pos_gate = pos_cost > 2.0
         # Now Compute the Appearance-based Cost Matrix
         app_cost = self.metric.distance(
             np.array([dets[i].feature for i in detection_indices]),

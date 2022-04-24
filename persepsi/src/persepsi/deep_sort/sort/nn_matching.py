@@ -87,8 +87,8 @@ def _nn_cosine_distance(x, y):
         A vector of length M that contains for each entry in `y` the
         smallest cosine distance to a sample in `x`.
     """
-    x_ = torch.from_numpy(np.asarray(x))
-    y_ = torch.from_numpy(np.asarray(y))
+    x_ = torch.from_numpy(np.asarray(x) / np.linalg.norm(x, axis=1, keepdims=True))
+    y_ = torch.from_numpy(np.asarray(y) / np.linalg.norm(y, axis=1, keepdims=True))
     distances = compute_distance_matrix(x_, y_, metric='cosine')
     distances = distances.cpu().detach().numpy()
     return distances.min(axis=0)

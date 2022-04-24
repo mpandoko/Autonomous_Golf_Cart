@@ -20,7 +20,7 @@ def calcdepth(xywh, distance, depth_scale):
 
 # Pixel to point
 def pixel_to_point(det, color_intrin):
-    xy_m = rs.rs2_deproject_pixel_to_point(color_intrin, det[:2], det[2])
+    xy_m = rs.rs2_deproject_pixel_to_point(color_intrin, det[:2], det[4])
     det[:2] = xy_m[:2]
     return det
 

@@ -21,8 +21,9 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 import pyrealsense2 as rs
+# PKG = 'numpy_tutorial'
+# import roslib; roslib.load_manifest(PKG)
 import rospy
-
 
 from persepsi.yolov5.models.experimental import attempt_load
 from persepsi.yolov5.utils.downloads import attempt_download
@@ -36,6 +37,8 @@ from persepsi.deep_sort.utils.parser import get_config
 from persepsi.deep_sort.deep_sort import DeepSort
 from persepsi.utils2.object_coordinate import *
 from persepsi.msg import obj_points
+from rospy.numpy_msg import numpy_msg
+from rospy_tutorials.msg import Floats
 
 ### ROS
 
@@ -47,6 +50,7 @@ print('Creating ROS Publisher...')
 freq = rospy.get_param('~freq', 30.) # Hz
 
 # Create publisher
+# pub = rospy.Publisher('/object_points', numpy_msg(Floats), queue_size = 1)
 pub = rospy.Publisher('/object_points', obj_points, queue_size = 1)
 rate = rospy.Rate(freq) # Hz
 
@@ -208,37 +212,71 @@ def detect(opt):
 
                     # draw boxes for visualization
                     if len(outputs) > 0:
+                        x = np.array([])
+                        y = np.array([])
+                        z = np.array([])
+                        obj_len = np.array([])
+                        zc = np.array([])
+                        xc = np.array([])
+                        vxc = np.array([])
+                        vzc = np.array([])
+                        # obj = np.ones((1, 3))*1.0e5
+                        num_obj = 0
                         for j, (output, conf) in enumerate(zip(outputs, confs)):
                             x_m = output[0]
                             y_m = output[1]
-                            z = output[4] 
-                            xy = rs.rs2_project_point_to_pixel(color_intrin, [x_m, y_m, z])
+                            z_m = output[4] 
+                            xy = rs.rs2_project_point_to_pixel(color_intrin, [x_m, y_m, z_m])
                             width = 640
                             height = 480
+                            vx = output[5] / (t5-t1)
+                            vz = output[9] / (t5-t1)
                             w = output[2]
                             h = output[3]
                             x1 = max(int(xy[0] - w / 2), 0) + 1
                             x2 = min(int(xy[0] + w / 2), width - 1)
                             y1 = max(int(xy[1] - h / 2), 0) + 1
                             y2 = min(int(xy[1] + h / 2), height - 1)
-                            # object_points = verts[x1:x2, y1:y2]
+                            object_points = verts[x1:x2, y1:y2].reshape(-1, 3)
                             bboxes = [int(x1), int(y1), int(x2), int(y2)]
                             id = int(output[10])
                             cls =int(output[11])
-                                    
-                            # # Get z points
-                            # zs = object_points[:, 2]
+
+                            # Get z points
+                            print(object_points)
+                            if not object_points.size:
+                                break
+                            zs = object_points[:, 2]
+                            # print(zs)
                             
-                            # # Get z median
-                            # z_ = np.median(zs)
+                            # Get z percentile 30 (where most likely the object blob is)
+                            print(zs)
+
+                            z_ = np.percentile(zs, 30)
+
+                            # print("awal")
+                            # print(object_points)
                             
-                            # # Delete object points if less or greater than threshold
-                            # ## Threshold: z_ - 0.5 | z_ + 0.5
+                            # Delete object points if less or greater than threshold
+                            ## Threshold: z_ - 0.5 | z_ + 0.5
+                            object_points = np.delete(object_points, np.where(
+                                                    (zs < z_ - 0.5) | (zs > z_ + 0.5)), 0)
                             # print(obj_points.shape)
-                            # obj_points = np.delete(obj_points, np.where(
-                            #                         (zs < z_ - 0.5) | (zs > z_ + 0.5)), 0)
-                            # print(obj_points.shape)
-                            # obj = np.concatenate((obj, obj_points))
+                            # obj = np.concatenate((obj, object_points)) if obj.size else object_points
+                            x0 = object_points[::50, 0]
+                            y0 = object_points[::50, 1]
+                            z0 = object_points[::50, 2]
+                            obj_len0 = len(x0)
+                            x = np.append(x, x0) #point cloud
+                            y = np.append(y, y0) #point cloud
+                            z = np.append(z, z0) #point cloud
+                            obj_len = np.append(obj_len, obj_len0)
+                            zc = np.append(zc, z_m) #z center
+                            xc = np.append(xc, x_m) #x center
+                            vxc =np.append(vxc, vx)
+                            vzc =np.append(vzc, vz)
+
+
 
                               
                             c = int(cls)  # integer class
@@ -248,30 +286,35 @@ def detect(opt):
                             if save_txt:
                                 # to MOT format
 
-                                vx = output[5] / (t5-t1)
-                                vz = output[9] / (t5-t1)
+                                
                                 # Write for visualization Live_Plot
                                 with open(txt_path, 'a') as f:
                                     f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, x_m,
-                                                            z, vx, vz, total_time, -1, -1, -1))  # coba ganti
+                                                            z_m, vx, vz, total_time, -1, -1, -1))  # coba ganti
                                                               
-                        # # Get collected object points for every axis
+                        # Get collected object points for every axis
                         # x = obj[::50, 0]
                         # y = obj[::50, 1]
                         # z = obj[::50, 2]
-
                         # print(x.shape)
-            
+
+                        # print("obj")
+                        # print(obj.shape)
                         # print("Number of objects: ", num_obj)
                         
-                        # # Publish message
-                        # msg.header.seq += 1
-                        # msg.num_obj = num_obj
-                        # msg.obj_x = x
-                        # msg.obj_y = y
-                        # msg.obj_z = z
+                        # Publish message
+                        msg.header.seq += 1
+                        msg.obj_len = obj_len
                         
-                        # pub.publish(msg)
+                        msg.obj_x = x
+                        msg.obj_y = y
+                        msg.obj_z = z
+                        msg.xc = xc
+                        msg.zc = zc
+                        msg.vxc = vxc
+                        msg.vzc = vzc
+                        
+                        pub.publish(msg)
 
 
                     LOGGER.info(f'{s}Done. YOLO:({t3 - t2:.3f}s), DeepSort:({t5 - t4:.3f}s)')
@@ -316,7 +359,7 @@ def detect(opt):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--yolo_model', nargs='+', type=str, default='yolov5m.pt', help='model.pt path(s)')
-    parser.add_argument('--deep_sort_model', type=str, default='osnet_ibn_x1_0_MSMT17')
+    parser.add_argument('--deep_sort_model', type=str, default='osnet_x0_25')
     parser.add_argument('--source', type=str, default='0', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
     parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
