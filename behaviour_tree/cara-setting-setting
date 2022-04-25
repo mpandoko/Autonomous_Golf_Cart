@@ -1,0 +1,11 @@
+1. package message generation sama runtime buat publisher dan subscriber
+2. cmake list
+3. 
+
+catkin_install_python(PROGRAMS
+  src/behaviour_tree/trees.py
+  src/behaviour_tree/(file file py yang jadi nodes)
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+4. catkin_setup_py, terus bikin setup.py
