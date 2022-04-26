@@ -31,8 +31,9 @@ from io import SEEK_CUR
 from pickle import GLOBAL
 from tkinter import E, N
 from turtle import pos
-from flask import copy_current_request_context
+# from flask import copy_current_request_context
 
+import os
 import rospkg
 import py_trees
 import argparse
@@ -78,7 +79,7 @@ planner = {
     'curv': [0., 0.]
 }
 obj = {
-    'obj_len': 0,
+    'obj_len': [1, 1],
     'obj_x': [1e5, 1e5],
     'obj_y': [1e5, 1e5],
     'obj_z': [1e5, 1e5],
@@ -137,7 +138,10 @@ def pose():
 def waypoint():
     global waypoint
     
-    curr_waypoint = [planner['wp_type'],planner['x'],planner['y'],planner['yaw'],planner['v'],planner['curv']]
+    curr_waypoint = [planner['x'],planner['y'],planner['yaw'],planner['v'],planner['curv']]
+    if len(curr_waypoint):
+        curr_waypoint = np.load(os.path.abspath(__file__+"/../waypoints/lurus_ica_2.npy"))
+        
     return curr_waypoint
 
 #Mereturn jarak kendaraan saat ini dengan titik tujuan
@@ -157,13 +161,13 @@ def d_rem(waypoint):
 #Memisahkan data object points untuk setiap object
 def obstacles_classifier():
     global obj
-    
+    rospy.Subscriber('/object_points', obj_points, perception_callback)
     obs = []
     a = 0
     for i in range (len(obj['obj_len'])):
-        b = a + obj['obj_len'][i]
+        b = int(a + obj['obj_len'][i])
         obj_row = {
-            'obj_id': i,
+            'id': i,
             'obj_x': obj['obj_x'][a:b],
             'obj_y': obj['obj_y'][a:b],
             'obj_z': obj['obj_z'][a:b],
@@ -173,7 +177,7 @@ def obstacles_classifier():
             'vzc': obj['vzc'][i],
         }
         obs.append(obj_row)
-        b = a
+        a = b
     return obs
 
 # Memeriksa apakah ada objek. dimana:
@@ -205,17 +209,17 @@ def leader_selection(waypoint):
                 obj_coll_id = [obstacle['id']]
                 obj_coll_zc = [obstacle['zc']]
                 obc_coll_vzc = [obstacle['vzc']]
-    return obj_coll_id, obc_coll_vzc
+    return [obj_coll_id, obc_coll_vzc]
 
 def is_leader_ex(waypoint):
-    id, vzc = leader_selection(waypoint)
+    id = leader_selection(waypoint)[0]
     if (not len(id)):
         return True
     else:
         return False
     
 def leader_velocity(waypoint):
-    id, vzc = leader_selection(waypoint)
+    vzc = leader_selection(waypoint)[1]
     return vzc
 
 # Occupancy Grid filler for one object,

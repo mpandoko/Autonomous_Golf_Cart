@@ -9,7 +9,7 @@ updated on Apr 25, 2022
 """
 
 import numpy as np
-from pygame import K_GREATER
+# from pygame import K_GREATER
 import rospy
 import time
 import sys

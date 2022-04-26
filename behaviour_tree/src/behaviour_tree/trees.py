@@ -116,6 +116,7 @@ def create_root():
     follow_leader = states.FollowLeader(name="Follow Leader")
     switch_lane = states.SwitchLane(name="Switc hLane")
     decelerate = states.DecelerateToStop(name="Decelerate to Stop")
+    follow_leader1 = states.FollowLeader(name="Follow Leader")
     
     
     root.add_children([seq_arrive, seq_leader_check,track_speed])
@@ -124,7 +125,7 @@ def create_root():
     fallb_states.add_children([seq_follow,seq_switch,seq_decelerate])
     seq_follow.add_children([leader_fast, follow_leader])
     seq_switch.add_children([possible_path_exist, switch_lane])
-    seq_decelerate.add_children([follow_leader])
+    seq_decelerate.add_children([follow_leader1])
     
     return root
 

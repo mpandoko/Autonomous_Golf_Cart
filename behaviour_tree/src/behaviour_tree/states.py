@@ -123,6 +123,8 @@ class IsLeaderFast(py_trees.behaviour.Behaviour):
         
         #Checking is leader velocity in front of vehicle
         v_leader = cond.leader_velocity(self.waypoint)
+        print('v leader',v_leader)
+        print(self.threshold)
         if (v_leader>self.threshold):
             self.feedback_message = "but it is fast"
             print("but it is fast")
