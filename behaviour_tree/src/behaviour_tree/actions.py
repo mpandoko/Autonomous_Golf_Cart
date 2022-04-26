@@ -9,6 +9,7 @@ updated on Apr 25, 2022
 """
 
 import numpy as np
+from pygame import K_GREATER
 import rospy
 import time
 import sys
@@ -17,17 +18,12 @@ from behaviour_tree.msg import ukf_states
 from behaviour_tree.msg import Planner
 import matplotlib.pyplot as plt
 
-from local_planner.local_planner import LocalPlanner
-from local_planner.collision_checker import CollisionChecker
-from local_planner.velocity_planner import VelocityPlanner
+from behaviour_tree.local_planner.local_planner import LocalPlanner
+from behaviour_tree.local_planner.collision_checker import CollisionChecker
+from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
 import behaviour_tree.condition as cond
 
 rospy.init_node('local_planner')
-
-# Set callback data
-obj = {'num_obj': 0, 'obj_x': [1e5, 1e5], 'obj_y': [1e5, 1e5], 'obj_z': [1e5, 1e5]}
-state = {'x': 0., 'y': 0., 'yaw': 0., 'v': 0.}
-RUN = False
 
 # # State callback variables
 # def state_callback(msg_nav):
@@ -42,6 +38,154 @@ RUN = False
 #     # state['yaw'] = msg_nav.yaw_imu
 
 #     RUN = True
+
+def follow_leader():
+    freq = rospy.get_param('~freq', 5.) # Hz
+    a_max = rospy.get_param('~a_max', 0.005) # m/s^2
+    
+    pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    
+    msg = Planner()
+    msg.header.frame_id = 'local_planner'
+    msg.header.seq = 0
+    msg.header.stamp = rospy.Time.now()
+    last_time = msg.header.stamp.to_sec() - 1./freq
+    
+    #Current state
+    curr_state = cond.pose
+    waypoint = cond.waypoint
+
+    print("State estimation received!")
+    print("Planning velocity...")
+    
+    
+    ### Calculate the actual sampling time
+    msg.header.stamp = rospy.Time.now()
+    delta_t = msg.header.stamp.to_sec() - last_time
+    last_time = msg.header.stamp.to_sec()
+    
+    #Asumsi ketika selisih jarak 5m, kecepatan kendaraan biar 1m/s
+    Kgap = 0.2
+    
+    d_min = 2.4
+    l_veh = 2.4
+    d_des = max(l_veh*curr_state[3]/5, d_min)
+    d_act = cond.d_rem
+    v_cmd = Kgap*(d_act - d_des)
+    
+    #generate velocity
+    vp = VelocityPlanner(a_max)
+    path = [waypoint[1], waypoint[2], waypoint[3]]
+    velocity_profile = vp.nominal_profile(path, curr_state[3],v_cmd)[3]
+    
+    
+    ### Send the message
+    # Header
+    msg.header.seq += 1
+    # Type
+    msg.wp_type = waypoint[0]
+    # Waypoints
+    msg.x = waypoint[1]
+    msg.y = waypoint[2]
+    msg.yaw = waypoint[3]
+    msg.v = velocity_profile
+    msg.curv = waypoint[5]
+    # Publish the message
+    pub.publish(msg)
+    
+def track_speed():
+    freq = rospy.get_param('~freq', 5.) # Hz
+    a_max = rospy.get_param('~a_max', 0.005) # m/s^2
+    
+    pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    
+    msg = Planner()
+    msg.header.frame_id = 'local_planner'
+    msg.header.seq = 0
+    msg.header.stamp = rospy.Time.now()
+    last_time = msg.header.stamp.to_sec() - 1./freq
+    
+    #Current state
+    curr_state = cond.pose
+    waypoint = cond.waypoint
+
+    print("State estimation received!")
+    print("Planning velocity...")
+    
+    
+    ### Calculate the actual sampling time
+    msg.header.stamp = rospy.Time.now()
+    delta_t = msg.header.stamp.to_sec() - last_time
+    last_time = msg.header.stamp.to_sec()
+    
+    v_cmd = 1
+    
+    #generate velocity
+    vp = VelocityPlanner(a_max)
+    path = [waypoint[1], waypoint[2], waypoint[3]]
+    velocity_profile = vp.nominal_profile(path, curr_state[3],v_cmd)[3]
+    
+    
+    ### Send the message
+    # Header
+    msg.header.seq += 1
+    # Type
+    msg.wp_type = waypoint[0]
+    # Waypoints
+    msg.x = waypoint[1]
+    msg.y = waypoint[2]
+    msg.yaw = waypoint[3]
+    msg.v = velocity_profile
+    msg.curv = waypoint[5]
+    # Publish the message
+    pub.publish(msg)
+    
+def decelerate_to_stop():
+    freq = rospy.get_param('~freq', 5.) # Hz
+    a_max = rospy.get_param('~a_max', 0.005) # m/s^2
+    
+    pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    
+    msg = Planner()
+    msg.header.frame_id = 'local_planner'
+    msg.header.seq = 0
+    msg.header.stamp = rospy.Time.now()
+    last_time = msg.header.stamp.to_sec() - 1./freq
+    
+    #Current state
+    curr_state = cond.pose
+    waypoint = cond.waypoint
+
+    print("State estimation received!")
+    print("Planning velocity...")
+    
+    
+    ### Calculate the actual sampling time
+    msg.header.stamp = rospy.Time.now()
+    delta_t = msg.header.stamp.to_sec() - last_time
+    last_time = msg.header.stamp.to_sec()
+    
+    v_cmd = 0
+    
+    #generate velocity
+    vp = VelocityPlanner(a_max)
+    path = [waypoint[1], waypoint[2], waypoint[3]]
+    velocity_profile = vp.nominal_profile(path, curr_state[3],v_cmd)[3]
+    
+    
+    ### Send the message
+    # Header
+    msg.header.seq += 1
+    # Type
+    msg.wp_type = waypoint[0]
+    # Waypoints
+    msg.x = waypoint[1]
+    msg.y = waypoint[2]
+    msg.yaw = waypoint[3]
+    msg.v = velocity_profile
+    msg.curv = waypoint[5]
+    # Publish the message
+    pub.publish(msg)
 
 def switch_lane(waypoints):
     freq = rospy.get_param('~freq', 5.) # Hz
@@ -77,10 +221,6 @@ def switch_lane(waypoints):
     #     time.sleep(0.02) # 20 ms
     #     pass
     # curr_state = [state['x'], state['y'], state['yaw'], state['v']]
-    curr_state = cond.pose
-
-    print("State estimation received!")
-    print("Planning local paths...")
 
     msg = Planner()
     msg.header.frame_id = 'local_planner'
@@ -89,7 +229,12 @@ def switch_lane(waypoints):
     last_time = msg.header.stamp.to_sec() - 1./freq
 
     # Set waypoints type (0: global, 1: local)
-    wp_type = 0
+    # wp_type = 0
+    
+    curr_state = cond.pose
+
+    print("State estimation received!")
+    print("Planning local paths...")
 
     # =============================================================================
     # # Create matplotlib figure
@@ -112,7 +257,6 @@ def switch_lane(waypoints):
     print('Generating feasible paths...')
     
     # Format [x, y, t, v]
-    curr_state = [state['x'], state['y'], state['yaw']-np.pi/5, state['v']]
     print('Current yaw: ', curr_state[2])
     print('Current x, y: ', curr_state[:2])
     # Get lookahead index
@@ -128,7 +272,7 @@ def switch_lane(waypoints):
     print('Path generated!')
     print('Status:', path_generated[1])
 
-    obstacles = [{'id' : 1, 'obj_x' : [11, 12, 13], 'obj_z' : [14, 15, 16], 'vxc' : 1, 'vzc' : 2},{'id' : 1, 'obj_x' : [11, 12, 13], 'obj_z' : [14, 15, 16], 'vxc' : 1, 'vzc' : 2}]
+    obstacles = cond.obstacles_classifier
     # Assign object points to array
 
     obj_ = np.zeros([len(x), 2])
@@ -174,7 +318,8 @@ def switch_lane(waypoints):
     best_wp = vp.nominal_profile(tf_paths[bp], curr_state[-1], g_set[bp][-1])
 
     # Add starting waypoints
-    wp_0 = [state['x'], state['y'], state['yaw'], state['v'], 0.0]
+    wp_0 = curr_state
+    wp_0.append(0.0)
     wp_0 = [(best_wp[0][0] + wp_0[0])/2, (best_wp[0][1] + wp_0[1])/2, (best_wp[0][2] + wp_0[2])/2,
             (best_wp[0][3] + wp_0[3])/2, (best_wp[0][4] + wp_0[4])/2]
     #best_wp.insert(0, wp_0)
@@ -204,11 +349,11 @@ def switch_lane(waypoints):
     # Publish the message
     pub.publish(msg)
 
-    while(true):
+    while(True):
         obstacles = cond.obstacles()
         obj_ = np.zeros([len(x), 2])
-        for obstacle in obstacles:
-            z, x = cond.occupancy_grid(obstacle, pred_time)
+        for i in range in (len(obstacles)):
+            z, x = cond.occupancy_grid(obstacles[i], pred_time)
             obj_[i] = [z[i], x[i]]
 
         

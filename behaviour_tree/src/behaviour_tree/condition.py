@@ -41,14 +41,15 @@ import time
 import rospy
 import numpy as np
 import py_trees.console as console
-import behaviour_tree.states as states
 
 #import dari local_planner
 from behaviour_tree.local_planner.collision_checker import CollisionChecker
+from behaviour_tree.local_planner.local_planner import LocalPlanner
+from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
 
 from multiprocessing.pool import RUN
 from persepsi.msg import obj_points
-from behaviour_tree.msg import ukf_states, Planner
+from behaviour_tree.msg import Planner, ukf_states
 from rospy.numpy_msg import numpy_msg
 from rospy_tutorials.msg import Floats
 
@@ -217,14 +218,78 @@ def leader_velocity(waypoint):
     id, vzc = leader_selection(waypoint)
     return vzc
 
+# Occupancy Grid filler for one object,
+# with additional grid for object moving based on predicted time.
+def occupancy_grid(obstacle, pred_time):
+    obj_x = obstacle['obj_x']
+    obj_z = obstacle['obj_z']
+    vxc = obstacle['vxc']
+    vzc = obstacle['vzc']
+    for i in range(pred_time-1):
+        for j in range(len(obj_x)):
+            obj_x.append(obj_x[j] + vxc*(i+1))
+            obj_z.append(obj_z[j] + vzc*(i+1))
+    return obj_z, obj_x
+
 
 # checking every path generated
 # is there free collision path
-def is_possible_path():
+# The output is either True or None
+def possible_path(waypoints):
+    ld_dist = rospy.get_param('~ld_dist', 5.0) # m
+    n_offset = rospy.get_param('~n_offset', 5) # m
+    offset = rospy.get_param('~offset', 0.5) # m
+    pred_time = rospy.get_param('~pred_time', 2) #s
+    a_max = rospy.get_param('~a_max', 0.005) # m/s^2
     
-    poss_path = True
+    lp = LocalPlanner(waypoints, ld_dist, n_offset, offset)
+    cc = CollisionChecker(c_location, c_rad, d_weight)
+    vp = VelocityPlanner(a_max)
     
-    return poss_path
+    curr_state = pose
+
+    print("State estimation received!")
+    print("Planning local paths...")
+    ### Generate feasible paths for collision checker
+    print('Generating feasible paths...')
+    
+    # Format [x, y, t, v]
+    curr_state = [state['x'], state['y'], state['yaw']-np.pi/5, state['v']]
+    print('Current yaw: ', curr_state[2])
+    print('Current x, y: ', curr_state[:2])
+    
+    # Set waypoints type (0: global, 1: local)
+    wp_type = 0
+    
+    # Get lookahead index
+    ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
+    print('Lookahead yaw: ', waypoints[ld_idx][2])
+
+    
+    # Get offset goal states
+    g_set = lp.get_goal_state_set(waypoints[ld_idx], waypoints, curr_state)
+    
+    # Plan paths
+    path_generated = lp.plan_paths(g_set)
+    
+    print('Path generated!')
+    print('Status:', path_generated[1])
+    
+    obstacles = obstacles_classifier() 
+    # Assign object points to array
+    obj_ = np.zeros([len(x), 2])
+    for i in range (len(obstacles)):
+        z, x = occupancy_grid(obstacles[i], pred_time)
+        obj_[i] = [z[i], x[i]]
+    
+    # Collision check for every path generated
+    coll = cc.collision_check(path_generated[0], obj_)
+        # Selecting the best path
+    for i in range (len(coll)):
+        if coll[i] == True:
+            return True
+        else:
+            False
 
 def condition():
     # In ROS, nodes are uniquely named. If two nodes with the same

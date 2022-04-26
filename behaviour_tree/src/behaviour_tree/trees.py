@@ -119,12 +119,12 @@ def create_root():
     
     
     root.add_children([seq_arrive, seq_leader_check,track_speed])
-    seq_arrive.add_children([is_arrive,stop])
+    seq_arrive.add_children([is_arrive,decelerate,stop])
     seq_leader_check.add_children([is_leader_exist, fallb_states])
     fallb_states.add_children([seq_follow,seq_switch,seq_decelerate])
     seq_follow.add_children([leader_fast, follow_leader])
     seq_switch.add_children([possible_path_exist, switch_lane])
-    seq_decelerate.add_children([decelerate])
+    seq_decelerate.add_children([follow_leader])
     
     return root
 

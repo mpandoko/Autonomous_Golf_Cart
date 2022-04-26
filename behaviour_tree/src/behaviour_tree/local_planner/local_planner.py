@@ -10,7 +10,7 @@ Based On: Motion Planning for Self-Driving Cars Course Final Project
 
 import numpy as np
 import copy
-from local_planner.spiral_generator import SpiralGenerator
+from behaviour_tree.local_planner.spiral_generator import SpiralGenerator
 from math import sin, cos, pi, sqrt
 
 class LocalPlanner(object):
