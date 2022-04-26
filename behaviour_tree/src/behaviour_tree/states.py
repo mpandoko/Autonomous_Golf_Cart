@@ -54,6 +54,7 @@ class IsArrive(py_trees.behaviour.Behaviour):
         #Checking remaining distance of arrival point
         d_remain = cond.d_rem(self.waypoint)
         print("is vehicle almost arrive?")
+        print('d_remain = ',d_remain)
         if (d_remain<=4):
             self.feedback_message = "Okey, Let's Stop"
             print("Yes! We will slowdown")
@@ -98,6 +99,7 @@ class IsLeaderExist(py_trees.behaviour.Behaviour):
         
         #Checking is there a leader in front of vehicle
         leader = cond.is_leader_ex(self.waypoint)
+        print('leader = ', leader)
         if leader:
             self.feedback_message = "Obstacle in front of us"
             print("Oh no, there is leader in front of us")
