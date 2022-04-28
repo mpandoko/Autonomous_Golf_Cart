@@ -183,6 +183,15 @@ class LoadRealSense2:  # Stream from Intel RealSense D435
         # Start streaming
         self.profile = self.pipe.start(self.cfg)
         self.path = rs.pipeline_profile()
+        # Assign filter
+        # self.decimation = rs.decimation_filter() #don't want to reduce the resolution for Yolov5
+        self.spatial = rs.spatial_filter()
+        # self.temporal = rs.temporal_filter() #not suitable for high speed motion
+        self.hole_filling = rs.hole_filling_filter()
+
+        # Depth to Disparity transform
+        self.depth_to_disparity = rs.disparity_transform(True)
+        self.disparity_to_depth = rs.disparity_transform(False)
 
         print("streaming at w = " + str(self.width) + " h = " + str(self.height) + " fps = " + str(self.fps))
 
@@ -207,24 +216,15 @@ class LoadRealSense2:  # Stream from Intel RealSense D435
             aligned_df = frames.get_depth_frame()
             aligned_cf = frames.get_color_frame()
 
-            # Assign filter
-            decimation = rs.decimation_filter()
-            spatial = rs.spatial_filter()
-            temporal = rs.temporal_filter()
-            hole_filling = rs.hole_filling_filter()
-
-            # Depth to Disparity transform
-            depth_to_disparity = rs.disparity_transform(True)
-            disparity_to_depth = rs.disparity_transform(False)
+            # Apply filter to depth frame
+            filtered_frame = self.depth_to_disparity.process(aligned_df)
+            filtered_frame = self.spatial.process(filtered_frame)
+            # filtered_frame = temporal.process(filtered_frame)
+            filtered_frame = self.disparity_to_depth.process(filtered_frame)
+            filtered_frame = self.hole_filling.process(filtered_frame)
+            aligned_df = filtered_frame.as_depth_frame()
 
             point_cloud = rs.pointcloud()
-
-            # Apply filter to depth frame
-            filtered_frame = depth_to_disparity.process(aligned_df)
-            filtered_frame = spatial.process(filtered_frame)
-            filtered_frame = temporal.process(filtered_frame)
-            filtered_frame = disparity_to_depth.process(filtered_frame)
-            filtered_frame = hole_filling.process(filtered_frame)
 
             points = point_cloud.calculate(filtered_frame)
             verts = np.asanyarray(points.get_vertices()).view(np.float32).reshape(-1, self.width, 3)  # xyz          

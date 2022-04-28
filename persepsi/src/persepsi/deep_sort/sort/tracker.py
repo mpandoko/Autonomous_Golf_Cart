@@ -115,7 +115,7 @@ class Tracker:
                     tracks[track_idx].mean, tracks[track_idx].covariance, msrs, color_intrin, False
                 )
             ) / self.GATING_THRESHOLD
-        pos_gate = pos_cost > 2.0
+        pos_gate = pos_cost > 4.0
         # Now Compute the Appearance-based Cost Matrix
         app_cost = self.metric.distance(
             np.array([dets[i].feature for i in detection_indices]),
@@ -143,6 +143,9 @@ class Tracker:
             color_intrin,
             confirmed_tracks,
         )
+        print("matches a")
+        print(matches_a)
+        print(unmatched_detections)
 
         # Associate remaining tracks together with unconfirmed tracks using IOU.
         iou_track_candidates = unconfirmed_tracks + [
@@ -160,9 +163,15 @@ class Tracker:
             iou_track_candidates,
             unmatched_detections,
         )
+        
+
 
         matches = matches_a + matches_b
         unmatched_tracks = list(set(unmatched_tracks_a + unmatched_tracks_b))
+
+        print("matches")
+        print(matches)
+        print(unmatched_detections)
         return matches, unmatched_tracks, unmatched_detections
 
     def _initiate_track(self, detection, class_id, color_intrin):

@@ -4,17 +4,18 @@ import numpy as np
 import pyrealsense2 as rs
 
 #Calculating Depth
-def calcdepth(xywh, distance, depth_scale):
+def calcdepth(xywh, aligned_df):
     dist_array = np.array([np.array([])])
     for  j in xywh: #loop for all bboxes
         xc = int(j[0].item())
         yc = int(j[1].item())
-        dist = np.array([np.array([distance[yc, xc]])])
+        dist = np.array([np.array([aligned_df.get_distance(xc, yc)])])
+        # dist = np.array([np.array([distance[yc, xc]])])
         dist_array = np.concatenate((dist_array, dist), axis=0) if dist_array.size else dist
     # Get data scale from the device and convert to meters
-    z =  np.multiply(dist_array, depth_scale)
+    # z =  np.multiply(dist_array, depth_scale)
     # Same type with xywhs
-    return torch.tensor(z).cuda()
+    return torch.tensor(dist_array).cuda()
 
     #https://github.com/IntelRealSense/librealsense/issues/6749 this potentially is more accurate, try later
 

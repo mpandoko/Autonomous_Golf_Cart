@@ -127,7 +127,7 @@ def detect(opt):
         show_vid = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
         #dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt and not jit)
-        dataset = LoadRealSense2(width = 640, height = 480, fps = 30, img_size = imgsz)
+        dataset = LoadRealSense2(width = 848, height = 480, fps = 30, img_size = imgsz)
         bs = len(dataset)  # batch_size
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt and not jit)
@@ -197,12 +197,13 @@ def detect(opt):
                 xywhs = xyxy2xywh(det[:, 0:4])
                 confs = det[:, 4]
                 clss = det[:, 5]
-                z = calcdepth(xywhs, distance, depth_scale)        
+                z = calcdepth(xywhs, aligned_df)      
                 xywhzs = torch.cat((xywhs, z), 1)
+                xywhzs = xywhzs[xywhzs[:, 4] > 0.0] #delete all z = 0 readings
 
                 # pass detections to deepsort
                 t4 = time_sync()
-                if (all(x.item() > 0 for x in z)): #eliminate wrong depth readings
+                if (all(x.item() > 0 for x in z)): #prevent zero data readings, mp thinks this line is unecessary but just for redundancy
                     outputs = deepsort.update(xywhzs.cpu(), confs.cpu(), clss.cpu(), im0, color_intrin)
                     #outputs = deepsort.update(xywhs.cpu(), confs.cpu(), clss.cpu(), im0)
                     t5 = time_sync()
@@ -237,22 +238,21 @@ def detect(opt):
                             x2 = min(int(xy[0] + w / 2), width - 1)
                             y1 = max(int(xy[1] - h / 2), 0) + 1
                             y2 = min(int(xy[1] + h / 2), height - 1)
-                            object_points = verts[x1:x2, y1:y2].reshape(-1, 3)
+                            object_points = verts[y1:y2, x1:x2].reshape(-1, 3)
                             bboxes = [int(x1), int(y1), int(x2), int(y2)]
                             id = int(output[10])
                             cls =int(output[11])
 
                             # Get z points
-                            print(object_points)
+                            # print(object_points)
                             if not object_points.size:
                                 break
                             zs = object_points[:, 2]
                             # print(zs)
                             
-                            # Get z percentile 30 (where most likely the object blob is)
-                            print(zs)
+                            # Get z percentile 40 (where most likely the object blob is)
 
-                            z_ = np.percentile(zs, 30)
+                            z_ = np.percentile(zs, 40)
 
                             # print("awal")
                             # print(object_points)
@@ -313,6 +313,9 @@ def detect(opt):
                         msg.zc = zc
                         msg.vxc = vxc
                         msg.vzc = vzc
+
+                        print('x,z = (',xc,zc,')')
+                        print('vx,vz = (',vxc,vzc,')')
                         
                         pub.publish(msg)
 
