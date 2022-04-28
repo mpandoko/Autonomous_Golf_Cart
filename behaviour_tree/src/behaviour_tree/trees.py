@@ -133,6 +133,7 @@ def create_root():
     )
     switch_lane = states.SwitchLane(
         name="Switch hLane",
+        curr_state=cond.pose(),
         waypoint=cond.waypoint(),
         pred_time=prediction_time,
         a_max=a_maxx

@@ -192,9 +192,10 @@ class FollowLeader(py_trees.behaviour.Behaviour):
         return super().terminate(new_status)
     
 class SwitchLane(py_trees.behaviour.Behaviour):
-    def __init__(self, name, waypoint, pred_time, a_max, topic_name="wp_planner"):
+    def __init__(self, name, curr_state, waypoint, pred_time, a_max, topic_name="wp_planner"):
         super(SwitchLane, self).__init__(name=name)
         self.topic_name = topic_name
+        self.curr_state = curr_state
         self.waypoint = waypoint
         self.pred_time = pred_time
         self.a_max = a_max
@@ -208,7 +209,8 @@ class SwitchLane(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #the switch lane code
-        act.switch_lane(self.waypoint, self.pred_time, self.a_max)
+        print("switching lane")
+        act.switch_lane(self.curr_state, self.waypoint, self.pred_time, self.a_max)
         
         print("We have to switch lane!")
         return py_trees.common.Status.SUCCESS

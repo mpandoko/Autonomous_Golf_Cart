@@ -466,13 +466,20 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     print('Path generated!')
     print('Status:', path_generated[1])
 
-    obstacles = cond.obstacles_classifier
+    obstacles = cond.obstacles_classifier()
     # Assign object points to array
 
-    obj_ = np.zeros([len(x), 2])
+    # obj_ = np.zeros([len(x), 2])
+    # for obstacle in obstacles:
+    #     z, x = cond.occupancy_grid(obstacle, pred_time)
+    #     obj_[i] = [z[i], x[i]]
+    obj_ = []
+    x_ = []
+    z_ = []
     for obstacle in obstacles:
-        z, x = cond.occupancy_grid(obstacle, pred_time)
-        obj_[i] = [z[i], x[i]]
+        x, z = cond.occupancy_grid(obstacle,pred_time)
+        x_ = x_+x
+        z_ = z_+z
         
 # =============================================================================
 #     # Plot data for debugging
@@ -568,7 +575,7 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     pub.publish(msg)
 
     while(True):
-        obstacles = cond.obstacles_classifier
+        obstacles = cond.obstacles_classifier()
         obj_ = np.zeros([len(x), 2])
         for i in range in (len(obstacles)):
             z, x = cond.occupancy_grid(obstacles[i], pred_time)

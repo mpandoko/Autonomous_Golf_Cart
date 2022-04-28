@@ -45,7 +45,7 @@ class LocalPlanner(object):
         
         return lookahead_idx
     
-    def get_goal_state_set(self, goal_state, waypoints, ego_state):
+    def get_goal_state_set(self, goal_state, ego_state):
         """
         Returns an array of goal state set that offsetted laterally from
         the main goal state by an amount of path_offset.
