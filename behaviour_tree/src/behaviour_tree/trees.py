@@ -4,8 +4,10 @@
 """
 Created on Apr 22, 2022
 @author: dexterdmonkey
-
 Behaviour Tree of Autonomus Golfcart
+
+The main tree code,
+launch this program by ROS
 """
 
 
@@ -24,16 +26,11 @@ Behaviour Tree of Autonomus Golfcart
 # Imports
 ##############################################################################
 
-from ast import arg
-from io import SEEK_CUR
-from tkinter import E, N
-from turtle import pos
 
-import rospkg
+from distutils.log import WARN
 import py_trees
 import argparse
 import sys
-import time
 import rospy
 import numpy as np
 import py_trees.console as console
@@ -41,8 +38,6 @@ import behaviour_tree.states as states
 import behaviour_tree.condition as cond
 
 from multiprocessing.pool import RUN
-from rospy.numpy_msg import numpy_msg
-from rospy_tutorials.msg import Floats
 
 
 ##############################################################################
@@ -88,8 +83,11 @@ def command_line_argument_parser():
 ##############################################################################
 
 def create_root():
-    #variables input
-    v_threshold = 5
+    #parameters
+    v_thres = rospy.get_param('~v_threshold', 5) # m/s
+    a_maxx = rospy.get_param('~a_max', 0.01) # m/s^2
+    prediction_time = rospy.get_param('~pred_time', 2) #s
+    v_trackspeed = rospy.get_param('~v_trackspeed', 1) #s
     
     #the root
     root = py_trees.composites.Selector("Selector")
@@ -97,11 +95,20 @@ def create_root():
     seq_leader_check = py_trees.composites.Sequence("Seq Leader Check")
     track_speed = states.TrackSpeed(
         name = "Track Speed",
-        a_max = 0.1
+        curr_state=cond.pose(),
+        waypoint=cond.waypoint(),
+        a_max = a_maxx,
+        v_ts = v_trackspeed
     )
-    is_arrive = states.IsArrive(name = "Arrive?")
+    is_arrive = states.IsArrive(
+        name = "Arrive?",
+        curr_state=cond.pose(),
+        waypoint=cond.waypoint()
+    )
     stop = states.Stop(name = "Stop")
-    is_leader_exist = states.IsLeaderExist(name="Leader?")
+    is_leader_exist = states.IsLeaderExist(
+        name="Leader?",
+        waypoint=cond.waypoint())
     fallb_states = py_trees.composites.Selector("Select States")
     seq_follow = py_trees.composites.Sequence("Seq Follow Leader")
     seq_switch = py_trees.composites.Sequence("Seq Switch Lane")
@@ -109,23 +116,47 @@ def create_root():
     #Leader and Path condition
     leader_fast = states.IsLeaderFast(
         name="Leader>?",
-        threshold= v_threshold
+        v_threshold= v_thres,
+        waypoint=cond.waypoint()
     )
-    possible_path_exist = states.PossiblePath("Possible Path?")
+    possible_path_exist = states.PossiblePath(
+        name="Possible Path?",
+        waypoint=cond.waypoint(),
+        pred_time=prediction_time,
+    )
     #Base states
-    follow_leader = states.FollowLeader(name="Follow Leader")
-    switch_lane = states.SwitchLane(name="Switc hLane")
-    decelerate = states.DecelerateToStop(name="Decelerate to Stop")
-    follow_leader1 = states.FollowLeader(name="Follow Leader")
-    
+    follow_leader1 = states.FollowLeader(
+        name="Follow Leader",
+        curr_state=cond.pose(),
+        waypoint=cond.waypoint(),
+        a_max = a_maxx
+    )
+    switch_lane = states.SwitchLane(
+        name="Switch hLane",
+        waypoint=cond.waypoint(),
+        pred_time=prediction_time,
+        a_max=a_maxx
+    )
+    decelerate = states.DecelerateToStop(
+        name="Decelerate to Stop",
+        curr_state=cond.pose(),
+        waypoint=cond.waypoint,
+        a_max = a_maxx
+    )
+    follow_leader2 = states.FollowLeader(
+        name="Follow Leader",
+        curr_state=cond.pose(),
+        waypoint=cond.waypoint(),
+        a_max = a_maxx
+    )
     
     root.add_children([seq_arrive, seq_leader_check,track_speed])
     seq_arrive.add_children([is_arrive,decelerate,stop])
     seq_leader_check.add_children([is_leader_exist, fallb_states])
     fallb_states.add_children([seq_follow,seq_switch,seq_decelerate])
-    seq_follow.add_children([leader_fast, follow_leader])
+    seq_follow.add_children([leader_fast, follow_leader1])
     seq_switch.add_children([possible_path_exist, switch_lane])
-    seq_decelerate.add_children([follow_leader1])
+    seq_decelerate.add_children([follow_leader2])
     
     return root
 

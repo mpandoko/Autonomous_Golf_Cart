@@ -4,8 +4,10 @@
 """
 Created on Apr 22, 2022
 @author: dexterdmonkey
-
 Behaviour Tree of Autonomus Golfcart
+
+This is listener source code,
+subscribing and processong the data needed for behaviour trees processes
 """
 
 
@@ -14,72 +16,36 @@ Behaviour Tree of Autonomus Golfcart
    :module: py_trees.demos.trees
    :func: command_line_argument_parser
    :prog: py-trees-demo-trees
-
 .. graphviz:: dot/demo-trees.dot
-
 .. image:: images/trees.gif
-
 """
+
+
 ##############################################################################
 # Imports
 ##############################################################################
 
-from ast import arg
-from asyncio import current_task
-from glob import glob
-from io import SEEK_CUR
-from pickle import GLOBAL
-from tkinter import E, N, Y
-from turtle import pos
-# from flask import copy_current_request_context
-
 import os
-import rospkg
-from sklearn.cluster import k_means
-import py_trees
-import argparse
-import sys
-import time
 import rospy
 import numpy as np
-import py_trees.console as console
 
 #import dari local_planner
 from behaviour_tree.local_planner.collision_checker import CollisionChecker
 from behaviour_tree.local_planner.local_planner import LocalPlanner
 from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
-
 from multiprocessing.pool import RUN
 from persepsi.msg import obj_points
 from behaviour_tree.msg import Planner, ukf_states
-from rospy.numpy_msg import numpy_msg
-from rospy_tutorials.msg import Floats
 
-
-##############################################################################
-# Setup Variables
-##############################################################################
-
-v_threshold = rospy.get_param('~freq', 5) # Hz
-waypoints_path = rospy.get_param('~waypoints_path', 'ica_2.npy')
-# waypoints_path = os.path.abspath(sys.path[0] + '/../../pkg_ta/src/waypoints/waypoints/' + waypoints_path)
-c_location = rospy.get_param('~c_location', [-1.0, 1.0, 3.0]) # m
-c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
-d_weight = rospy.get_param('~d_weight', 0.5)
-prediction_time = rospy.get_param('~pred_time',2) #s
-
-# waypoints = np.load(waypoints_path) + [0, 0, -np.pi/5, 0, 0]
+RUN = False
 
 def state_callback(msg_nav):
-    global state
-    global RUN
+    global local_state
     
-    state['x'] = msg_nav.x
-    state['y'] = msg_nav.y
-    state['v'] = np.sqrt(msg_nav.vx**2 + msg_nav.vy**2)
-    state['yaw'] = msg_nav.yaw_est
-    
-    RUN = True
+    local_state['x'] = msg_nav.x
+    local_state['y'] = msg_nav.y
+    local_state['v'] = np.sqrt(msg_nav.vx**2 + msg_nav.vy**2)
+    local_state['yaw'] = msg_nav.yaw_est
      
 def perception_callback(data):
     global obj
@@ -103,38 +69,51 @@ def planner_callback(planner_msg):
     wp_planner['v'] = planner_msg.v
     wp_planner['curv'] = planner_msg.curv
 
-def pose():
-    global local_state
-    
-    curr_state = [local_state['x'], local_state['y'], local_state['yaw']-np.pi/5, local_state['v']]
-    return curr_state
-
 def waypoint():
     global wp_planner
     
     curr_waypoint = []
     if (wp_planner['wp_type']==None):
-        curr_waypoint = np.load(os.path.abspath(__file__+"/../waypoints/lurus_ica_2.npy"))
-        curr_waypoint = curr_waypoint - [curr_waypoint[0][0],curr_waypoint[0][1],-np.pi/5,0,0]
+        curr_waypoint = np.load(os.path.abspath(__file__+'/../waypoints/lurus_ica_2.npy'))
+        # curr_waypoint = curr_waypoint - [curr_waypoint[0][0],curr_waypoint[0][1],0,0,0]
     else:
         for i in range (len(wp_planner['x'])):
             curr_waypoint.append([wp_planner['x'][i],wp_planner['y'][i],wp_planner['yaw'][i],wp_planner['v'][i],wp_planner['curv'][i]])
     return curr_waypoint
 
-#Mereturn jarak kendaraan saat ini dengan titik tujuan
-def d_rem(waypoint):
+def pose():
     global local_state
+    global RUN
+    wp = waypoint()
     
+    # parameter adjustment for yaw and waypoints
+    # where the local state.
+    # is in subtracted by first waypoint and first ever local state when the car is ran
+    global first_yaw
+    if (not RUN):
+        first_yaw = local_state['yaw']
+        print('fy = ',first_yaw)
+    else:
+        first_yaw = first_yaw
+        
+    curr_state = [local_state['x'], local_state['y'], local_state['yaw']-(first_yaw-wp[0][2]), local_state['v']]
+    print("current_local state = ", curr_state)
+    RUN = False
+    return curr_state
+
+#Mereturn jarak kendaraan saat ini dengan titik tujuan
+def d_rem(curr_state,waypoint):
+    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     #State mobil sekarang
-    x1 = local_state['x']
-    y1 = local_state['y']
+    x1 = curr_state[0]
+    y1 = curr_state[1]
     
     #Titik akhir tujuan
     x2 = waypoint[-1][0]
     y2 = waypoint[-1][1]
 
-    print('x1x2y1y2 = ')
-    print(x1,x2,y1,y2)
+    # print('x1x2y1y2 = ')
+    # print(x1,x2,y1,y2)
 
     d_remain = np.sqrt((x2-x1)**2+(y2-y1)**2) #meter
     return d_remain
@@ -173,6 +152,7 @@ def leader_selection(waypoint):
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     #Colllision Check Class
+    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     cc = CollisionChecker(c_location, c_rad, d_weight)
     obstacles = obstacles_classifier()
     obj_coll_id = []
@@ -210,9 +190,10 @@ def leader_selection(waypoint):
                 obj_coll_id = [obstacle['id']]
                 obj_coll_zc = [obstacle['zc']]
                 obc_coll_vzc = [obstacle['vzc']]
-    return [obj_coll_id, obc_coll_vzc]
+    return [obj_coll_id, obc_coll_vzc, obj_coll_zc]
 
 def is_leader_ex(waypoint):
+    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     id = leader_selection(waypoint)[0]
     if (len(id)):
         return True
@@ -220,8 +201,14 @@ def is_leader_ex(waypoint):
         return False
     
 def leader_velocity(waypoint):
+    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     vzc = leader_selection(waypoint)[1]
     return vzc[0]
+
+def leader_distance(waypoint):
+    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
+    zc = leader_selection(waypoint)[2]
+    return zc[0]
 
 # Occupancy Grid filler for one object,
 # with additional grid for object moving based on predicted time.
@@ -245,19 +232,17 @@ def occupancy_grid(obstacle, pred_time):
 # checking every path generated
 # is there free collision path
 # The output is either True or None
-def possible_path(waypoints):
+def possible_path(waypoints, pred_time):
     ld_dist = rospy.get_param('~ld_dist', 5.0) # m
     n_offset = rospy.get_param('~n_offset', 5) # m
     offset = rospy.get_param('~offset', 0.5) # m
-    pred_time = rospy.get_param('~pred_time', 2) #s
-    a_max = rospy.get_param('~a_max', 0.005) # m/s^2
     c_location = rospy.get_param('~c_location', [-1.0, 1.0, 3.0]) # m
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     
+    waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]
     lp = LocalPlanner(waypoints, ld_dist, n_offset, offset)
     cc = CollisionChecker(c_location, c_rad, d_weight)
-    vp = VelocityPlanner(a_max)
     
     curr_state = pose
 
@@ -280,7 +265,7 @@ def possible_path(waypoints):
 
     
     # Get offset goal states
-    g_set = lp.get_goal_state_set(waypoints[ld_idx], waypoints, curr_state)
+    g_set = lp.get_goal_state_set(waypoints[ld_idx], curr_state)
     
     # Plan paths
     path_generated = lp.plan_paths(g_set)
@@ -315,6 +300,7 @@ def possible_path(waypoints):
 
 
 # Set callback data and variables
+# Setup dibawah karena agar tidak dipanggil fungsi diatasnya
 wp_planner = {
     'wp_type': None,
     'x': [],
@@ -339,7 +325,7 @@ local_state = {
     'yaw':0.,
     'v':0.,
 }
-RUN = False
+
 rospy.Subscriber('/object_points', obj_points, perception_callback)
 rospy.Subscriber('/ukf_states', ukf_states, state_callback)
 
