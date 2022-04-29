@@ -9,7 +9,7 @@
 		<cam_distance>35</cam_distance>
 		<fov_deg>35</fov_deg>
 		<refresh_fps>20</refresh_fps>
-		<!-- <follow_vehicle>r1</follow_vehicle> -->
+		<follow_vehicle>r1</follow_vehicle>
 	</gui>
 
 
@@ -18,10 +18,20 @@
 	     ======================== -->
 	<element class="occupancy_grid">
 		<!-- File can be an image or an MRPT .gridmap file -->
-		<file>uma_campus.gridmap.gz</file>
+		<file>highway.jpg</file>
 
 		<!--<show_collisions>true</show_collisions>-->
 	</element>
+
+	<!-- ground -->
+	<!-- <element class="horizontal_plane">
+		<cull_face>BACK</cull_face>
+		<x_min>-20</x_min>
+		<y_min>-20</y_min>
+		<x_max> 200</x_max>
+		<y_max> 20</y_max>
+		<z>0.0</z>
+	</element> -->
 
 	<!-- ground grid (for visual reference) -->
 	<element class="ground_grid">

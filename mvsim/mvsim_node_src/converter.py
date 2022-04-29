@@ -57,11 +57,11 @@ class converter:
 
         vx = data.twist.twist.linear.x
         vy = data.twist.twist.linear.y
-        rospy.loginfo('state_x = %s', state_x)
-        rospy.loginfo('state_y = %s', state_y)
-        rospy.loginfo('yaw = %s', yaw)
-        rospy.loginfo('vx = %s', vx)
-        rospy.loginfo('vy = %s', vy)
+        # rospy.loginfo('state_x = %s', state_x)
+        # rospy.loginfo('state_y = %s', state_y)
+        # rospy.loginfo('yaw = %s', yaw)
+        # rospy.loginfo('vx = %s', vx)
+        # rospy.loginfo('vy = %s', vy)
 
 
         self.state_msg = ukf_states()
@@ -81,12 +81,19 @@ class converter:
         return "sending state"
 
     def control(self, data2):
-
-
         self.control_msg = Twist()
-        self.control_msg.linear.x = data2.action_throttle
-        self.control_msg.angular.z = data2.action_steer
-        self.send_state_ = False
+        print(self.control_msg)
+        throttle = data2.action_throttle
+        steer = data2.action_steer
+        rospy.loginfo('state_x = %s', throttle)
+        self.control_msg.linear.x = throttle
+        self.control_msg.linear.y = 0.0
+        self.control_msg.linear.z = 0.0
+        self.control_msg.angular.x = 0.0
+        self.control_msg.angular.y = 0.0
+        self.control_msg.angular.z = steer
+        self.send_control_ = True
+        print(self.control_msg)
         return "sending control"
 
 
@@ -98,10 +105,10 @@ class converter:
         pub_state = rospy.Publisher('/ukf_states', ukf_states, queue_size=1)
         pub_control = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
         while not rospy.is_shutdown():
-            if self.send_state_:
-                pub_state.publish(self.state_msg)
             if self.send_control_:
                 pub_control.publish(self.control_msg)
+            if self.send_state_:
+                pub_state.publish(self.state_msg)
 
 if __name__ == '__main__':
     rospy.init_node('converter')
