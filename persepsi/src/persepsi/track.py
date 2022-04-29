@@ -278,7 +278,7 @@ def detect(opt):
                                 with open(txt_path, 'a') as f:
                                     f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, x_m,
                                                             z_m, vx, vz, total_time, -1, -1, -1))
-                                                              
+                                                                                  
                         # Publish message
                         msg.header.seq += 1
                         msg.obj_len = obj_len
@@ -293,6 +293,21 @@ def detect(opt):
 
                         print('x,z = (',xc,zc,')')
                         print('vx,vz = (',vxc,vzc,')')
+                        
+                        pub.publish(msg)
+                    
+                    else:
+                        # Publish message
+                        msg.header.seq += 1
+                        msg.obj_len = []
+                        
+                        msg.obj_x = []
+                        msg.obj_y = []
+                        msg.obj_z = []
+                        msg.xc = []
+                        msg.zc = []
+                        msg.vxc = []
+                        msg.vzc = []
                         
                         pub.publish(msg)
 
