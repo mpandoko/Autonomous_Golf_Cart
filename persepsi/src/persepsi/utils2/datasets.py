@@ -217,6 +217,8 @@ class LoadRealSense2:  # Stream from Intel RealSense D435
             aligned_cf = frames.get_color_frame()
 
             # Apply filter to depth frame
+            # https://dev.intelrealsense.com/docs/post-processing-filters
+            # https://github.com/IntelRealSense/librealsense/blob/jupyter/notebooks/depth_filters.ipynb
             filtered_frame = self.depth_to_disparity.process(aligned_df)
             filtered_frame = self.spatial.process(filtered_frame)
             # filtered_frame = temporal.process(filtered_frame)

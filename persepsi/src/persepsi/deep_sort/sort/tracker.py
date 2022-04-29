@@ -143,9 +143,6 @@ class Tracker:
             color_intrin,
             confirmed_tracks,
         )
-        print("matches a")
-        print(matches_a)
-        print(unmatched_detections)
 
         # Associate remaining tracks together with unconfirmed tracks using IOU.
         iou_track_candidates = unconfirmed_tracks + [
@@ -164,14 +161,8 @@ class Tracker:
             unmatched_detections,
         )
         
-
-
         matches = matches_a + matches_b
         unmatched_tracks = list(set(unmatched_tracks_a + unmatched_tracks_b))
-
-        print("matches")
-        print(matches)
-        print(unmatched_detections)
         return matches, unmatched_tracks, unmatched_detections
 
     def _initiate_track(self, detection, class_id, color_intrin):

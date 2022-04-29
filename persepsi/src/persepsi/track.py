@@ -127,7 +127,7 @@ def detect(opt):
         show_vid = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
         #dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt and not jit)
-        dataset = LoadRealSense2(width = 848, height = 480, fps = 30, img_size = imgsz)
+        dataset = LoadRealSense2(width = 848, height = 480, fps = 30, img_size = imgsz) #best resolution for accuracy
         bs = len(dataset)  # batch_size
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt and not jit)
@@ -244,25 +244,18 @@ def detect(opt):
                             cls =int(output[11])
 
                             # Get z points
-                            # print(object_points)
                             if not object_points.size:
                                 break
                             zs = object_points[:, 2]
-                            # print(zs)
                             
-                            # Get z percentile 40 (where most likely the object blob is)
-
+                            # Get z percentile 40 (where most likely the object blob is, 
+                            # think of it like medians but more likely to pick the foreground object instead of the background)
                             z_ = np.percentile(zs, 40)
 
-                            # print("awal")
-                            # print(object_points)
-                            
                             # Delete object points if less or greater than threshold
                             ## Threshold: z_ - 0.5 | z_ + 0.5
                             object_points = np.delete(object_points, np.where(
                                                     (zs < z_ - 0.5) | (zs > z_ + 0.5)), 0)
-                            # print(obj_points.shape)
-                            # obj = np.concatenate((obj, object_points)) if obj.size else object_points
                             x0 = object_points[::50, 0]
                             y0 = object_points[::50, 1]
                             z0 = object_points[::50, 2]
@@ -276,32 +269,16 @@ def detect(opt):
                             vxc =np.append(vxc, vx)
                             vzc =np.append(vzc, vz)
 
-
-
-                              
                             c = int(cls)  # integer class
                             label = f'{id} {names[c]} {conf:.2f}'
                             annotator.box_label(bboxes, label, color=colors(c, True))
 
                             if save_txt:
-                                # to MOT format
-
-                                
                                 # Write for visualization Live_Plot
                                 with open(txt_path, 'a') as f:
                                     f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, x_m,
-                                                            z_m, vx, vz, total_time, -1, -1, -1))  # coba ganti
+                                                            z_m, vx, vz, total_time, -1, -1, -1))
                                                               
-                        # Get collected object points for every axis
-                        # x = obj[::50, 0]
-                        # y = obj[::50, 1]
-                        # z = obj[::50, 2]
-                        # print(x.shape)
-
-                        # print("obj")
-                        # print(obj.shape)
-                        # print("Number of objects: ", num_obj)
-                        
                         # Publish message
                         msg.header.seq += 1
                         msg.obj_len = obj_len
