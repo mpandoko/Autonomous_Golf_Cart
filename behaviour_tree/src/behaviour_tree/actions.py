@@ -72,7 +72,7 @@ def transform_paths(path, curv, ego_state):
 
 def follow_leader(curr_state, waypoint, a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
-    ld_dist = rospy.get_param('~ld_dist', 5.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
     msg = Planner()
@@ -187,7 +187,7 @@ def follow_leader(curr_state, waypoint, a_max):
     
 def track_speed(curr_state, waypoint, v_ts, a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
-    ld_dist = rospy.get_param('~ld_dist', 5.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
     msg = Planner()
@@ -295,7 +295,7 @@ def track_speed(curr_state, waypoint, v_ts, a_max):
     
 def decelerate_to_stop(curr_state, waypoint, a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
-    ld_dist = rospy.get_param('~ld_dist', 5.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
     msg = Planner()
@@ -403,10 +403,10 @@ def decelerate_to_stop(curr_state, waypoint, a_max):
 
 def switch_lane(curr_state,waypoints,pred_time,a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
-    ld_dist = rospy.get_param('~ld_dist', 5.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     n_offset = rospy.get_param('~n_offset', 5) # m
-    offset = rospy.get_param('~offset', 0.5) # m
-    c_location = rospy.get_param('~c_location', [-1.0, 1.0, 3.0]) # m
+    offset = rospy.get_param('~offset', 3) # m
+    c_location = rospy.get_param('~c_location', [-1, 1, 3]) # m
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
 
@@ -417,7 +417,7 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     lp = LocalPlanner(waypoints, ld_dist, n_offset, offset)
     cc = CollisionChecker(c_location, c_rad, d_weight)
     vp = VelocityPlanner(a_max)
-
+    
     # Create publisher and subscriber
     # rospy.Subscriber('/ukf_states', ukf_states, state_callback)
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
@@ -480,7 +480,9 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
         x, z = cond.occupancy_grid(obstacle,pred_time)
         x_ = x_+x
         z_ = z_+z
-        
+    for i in range (len(x_)):
+        obj_.append([x_[i],z_[i]])
+    obj_ = np.array(obj_)  
 # =============================================================================
 #     # Plot data for debugging
 #     plt.clf()
@@ -526,8 +528,8 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     
     # Convert waypoints to message format
     for i in range(len(best_wp)):
-        x.append(best_wp[i][0]+x0)
-        y.append(best_wp[i][1]+y0)
+        x.append(best_wp[i][0])
+        y.append(best_wp[i][1])
         yaw.append(best_wp[i][2]+np.pi/5)
         v.append(best_wp[i][3])
         curv.append(best_wp[i][4])
@@ -552,8 +554,8 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     xwp = []
     ywp = []
     for i in range (len(waypoints)):
-        xwp.append(waypoints[i][0]+x0)
-        ywp.append(waypoints[i][1]+y0)
+        xwp.append(waypoints[i][0])
+        ywp.append(waypoints[i][1])
     
     import matplotlib.pyplot as plt
     # plt.subplot(1,2,1)
@@ -576,12 +578,16 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
 
     while(True):
         obstacles = cond.obstacles_classifier()
-        obj_ = np.zeros([len(x), 2])
-        for i in range in (len(obstacles)):
-            z, x = cond.occupancy_grid(obstacles[i], pred_time)
-            obj_[i] = [z[i], x[i]]
+        obj_ = []
+        x_ = []
+        z_ = []
+        for obstacle in obstacles:
+            x, z = cond.occupancy_grid(obstacle,pred_time)
+            x_ = x_+x
+            z_ = z_+z
             
         # Collision Check
         coll = cc.collision_check([best_wp], obj_)
+        print('Still switching lane, no collision happen')
         if not coll:
             break
