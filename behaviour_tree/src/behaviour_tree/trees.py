@@ -141,7 +141,7 @@ def create_root():
     decelerate = states.DecelerateToStop(
         name="Decelerate to Stop",
         curr_state=cond.pose(),
-        waypoint=cond.waypoint,
+        waypoint=cond.waypoint(),
         a_max = a_maxx
     )
     follow_leader2 = states.FollowLeader(

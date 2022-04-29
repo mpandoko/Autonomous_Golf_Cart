@@ -37,6 +37,8 @@ from multiprocessing.pool import RUN
 from persepsi.msg import obj_points
 from behaviour_tree.msg import Planner, ukf_states
 
+from behaviour_tree.dummies import obstacle
+
 RUN = False
 
 def state_callback(msg_nav):
@@ -92,7 +94,7 @@ def pose():
     global first_yaw
     if (not RUN):
         first_yaw = local_state['yaw']
-        print('fy = ',first_yaw)
+        # print('fy = ',first_yaw)
     else:
         first_yaw = first_yaw
         
@@ -120,9 +122,11 @@ def d_rem(curr_state,waypoint):
 
 #Memisahkan data object points untuk setiap object
 def obstacles_classifier():
-    global obj
-    print('x,z = (',obj['xc'],obj['zc'],')')
-    print('vx,vz = (',obj['vxc'],obj['vzc'],')')
+    # global obj
+    obj = obstacle(distance=7).slow()
+    
+    # print('x,z = (',obj['xc'],obj['zc'],')')
+    # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
 
     obs = []
     a = 0
@@ -233,10 +237,10 @@ def occupancy_grid(obstacle, pred_time):
 # is there free collision path
 # The output is either True or None
 def possible_path(waypoints, pred_time):
-    ld_dist = rospy.get_param('~ld_dist', 5.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     n_offset = rospy.get_param('~n_offset', 5) # m
-    offset = rospy.get_param('~offset', 0.5) # m
-    c_location = rospy.get_param('~c_location', [-1.0, 1.0, 3.0]) # m
+    offset = rospy.get_param('~offset', 3) # m
+    c_location = rospy.get_param('~c_location', [-1, 1, 3]) # m
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     
@@ -244,24 +248,20 @@ def possible_path(waypoints, pred_time):
     lp = LocalPlanner(waypoints, ld_dist, n_offset, offset)
     cc = CollisionChecker(c_location, c_rad, d_weight)
     
-    curr_state = pose
+    curr_state = pose()
 
     print("State estimation received!")
     print("Planning local paths...")
     ### Generate feasible paths for collision checker
     print('Generating feasible paths...')
     
-    # Format [x, y, t, v]
-    curr_state = [local_state['x'], local_state['y'], local_state['yaw']-np.pi/5, local_state['v']]
-    print('Current yaw: ', curr_state[2])
-    print('Current x, y: ', curr_state[:2])
     
     # Set waypoints type (0: global, 1: local)
     wp_type = 0
     
     # Get lookahead index
     ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
-    print('Lookahead yaw: ', waypoints[ld_idx][2])
+    print('Lookahead: ', waypoints[ld_idx])
 
     
     # Get offset goal states
@@ -287,11 +287,12 @@ def possible_path(waypoints, pred_time):
     for i in range (len(x_)):
         obj_.append([x_[i],z_[i]])
 
-    
     obj_ = np.array(obj_)
     # Collision check for every path generated
     coll = cc.collision_check(path_generated[0], obj_)
-        # Selecting the best path
+    
+    print("Free collision checker: ",coll)
+
     for i in range (len(coll)):
         if coll[i] == True:
             return True
