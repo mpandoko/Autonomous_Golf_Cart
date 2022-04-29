@@ -228,7 +228,7 @@ def detect(opt):
                             y_m = output[1]
                             z_m = output[4] 
                             xy = rs.rs2_project_point_to_pixel(color_intrin, [x_m, y_m, z_m])
-                            width = 640
+                            width = 848
                             height = 480
                             vx = output[5] / (t5-t1)
                             vz = output[9] / (t5-t1)
