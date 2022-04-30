@@ -84,14 +84,14 @@ class converter:
         self.control_msg = Twist()
         print(self.control_msg)
         throttle = data2.action_throttle
-        steer = data2.action_steer
+        steer = data2.action_steer * 3.1416 / 180
         rospy.loginfo('state_x = %s', throttle)
         self.control_msg.linear.x = throttle
         self.control_msg.linear.y = 0.0
         self.control_msg.linear.z = 0.0
         self.control_msg.angular.x = 0.0
         self.control_msg.angular.y = 0.0
-        self.control_msg.angular.z = steer
+        self.control_msg.angular.z = -steer
         self.send_control_ = True
         print(self.control_msg)
         return "sending control"

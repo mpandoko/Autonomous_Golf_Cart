@@ -119,9 +119,9 @@ class waypoints_dummies():
     
     def straight(self,v=1):
         x = np.linspace(0,50,501)
-        y = [0.01 for i in range(501)]
-        yaw = [0.01 for i in range(501)]
-        curv = [0 for i in range(501)]
+        y = [0.0 for i in range(501)]
+        yaw = [0.0 for i in range(501)]
+        curv = [0.0 for i in range(501)]
         path = [x,y,yaw,curv]
         waypoint = self.vp.nominal_profile(path,v,0)
         
