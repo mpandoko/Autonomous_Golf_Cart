@@ -100,10 +100,10 @@ class converter:
     def __init__(self):
         self.send_state_ = False
         self.send_control_ = False
-        rospy.Subscriber('/base_pose_ground_truth', Odometry, self.state)
+        rospy.Subscriber('/r2/base_pose_ground_truth', Odometry, self.state)
         rospy.Subscriber('/control_signal', Control, self.control)
         pub_state = rospy.Publisher('/ukf_states', ukf_states, queue_size=1)
-        pub_control = rospy.Publisher('/cmd_vel', Twist, queue_size=1)
+        pub_control = rospy.Publisher('/r2/cmd_vel', Twist, queue_size=1)
         while not rospy.is_shutdown():
             if self.send_control_:
                 pub_control.publish(self.control_msg)

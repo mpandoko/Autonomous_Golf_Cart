@@ -18,22 +18,22 @@
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
-<!--	<element class="occupancy_grid">
-		<file>mvsim_demo_world1.png</file>
-		<resolution>0.5</resolution>
-		<centerpixel_x>100</centerpixel_x>
-		<centerpixel_y>100</centerpixel_y>
+	<element class="occupancy_grid">
+		<file>highway.jpg</file>
+		<resolution>0.1</resolution>
+		<centerpixel_x>0</centerpixel_x>
+		<centerpixel_y>140</centerpixel_y>
 	</element>
--->
+
 	<!-- ground -->
-	<element class="horizontal_plane">
+	<!-- <element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
 		<x_min>-20</x_min>
 		<y_min>-20</y_min>
-		<x_max> 20</x_max>
+		<x_max> 200</x_max>
 		<y_max> 20</y_max>
 		<z>0.0</z>
-	</element>
+	</element> -->
 
 	<!-- ground grid (for visual reference) -->
 	<element class="ground_grid">
@@ -180,7 +180,7 @@
 		   Vehicle(s) definition
 	     ======================== -->
 	<vehicle name="r1" class="small_robot">
-		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>-100 -100 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<publish>
@@ -190,7 +190,7 @@
 	</vehicle>
 
 	<vehicle name="r2" class="car_ackermann">
-		<init_pose>-10.0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>0.01 0.01 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<publish>
@@ -199,86 +199,6 @@
 		</publish>
 	</vehicle>
 
-
-	<!-- ======================================
-	      Obstacle blocks classes definition
-	     ====================================== -->
-	<block:class name="square_obstacle">
-		<mass>20</mass>
-		<color>#0080ff</color>
-		<zmax>1.5</zmax>
-		<ground_friction>0.3</ground_friction>
-		<shape>
-			<pt>-1.0 -0.6</pt>
-			<pt>-1.0  0.6</pt>
-			<pt> 1.0  0.5</pt>
-			<pt> 1.0 -0.5</pt>
-		</shape>
-	</block:class>
-
-	<block:class name="obstacle_table">
-		<mass>30</mass>
-		<color>#0080ff</color>
-		<zmax>1.0</zmax>
-		<ground_friction>0.5</ground_friction>
-		<shape>
-			<pt>-1.262 -0.631</pt>
-			<pt>-1.262  0.631</pt>
-			<pt> 1.262  0.631</pt>
-			<pt> 1.262 -0.631</pt>
-		</shape>
-		<!--  Custom visualization model -->
-		<!-- 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>table1.obj</model_uri>
-			<model_scale>0.025</model_scale>
-			<model_offset_x>0.0</model_offset_x>
-			<model_offset_y>0.0</model_offset_y>
-			<model_offset_z>0.26</model_offset_z>
-			<model_yaw>0.0</model_yaw>
-			<model_pitch>0.0</model_pitch>
-			<model_roll>90.0</model_roll>
-		</visual>
-	</block:class>
-
-	<block:class name="nurse_station">
-		<mass>300</mass>
-		<color>#0080ff</color>
-		<zmax>2.0</zmax>
-		<ground_friction>100.0</ground_friction>
-		<shape_from_visual/> <!-- automatic size from 3D model file -->
-		<!--  Custom visualization model -->
-		<!-- 3D model filename to load (local or remote http://uri ) -->
-		<visual>
-			<model_uri>../models/aws_robomaker_hospital_nursesstation_01_visual.dae</model_uri>
-			<model_scale>1.0</model_scale>
-			<model_offset_x>0.0</model_offset_x>
-			<model_offset_y>0.0</model_offset_y>
-			<model_offset_z>0.0</model_offset_z>
-			<model_yaw>0.0</model_yaw>
-			<model_pitch>0.0</model_pitch>
-			<model_roll>00.0</model_roll>
-		</visual>
-	</block:class>
-
-
-	<!-- ========================
-		Obstacle blocks
-	     ======================== -->
-	<block class="square_obstacle">
-		<init_pose>6 5 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<publish>
-		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
-		  <publish_pose_period>50e-3</publish_pose_period>
-		</publish>
-	</block>
-	<block class="obstacle_table">
-		<init_pose>7 7 45</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-		<publish>
-		  <publish_pose_topic>/${NAME}/pose</publish_pose_topic>
-		  <publish_pose_period>50e-3</publish_pose_period>
-		</publish>
-	</block>
 
 	<!-- Example intangible block, used as a reference for relative pose sensing -->
 	<block  name="blockSensor1">
@@ -317,10 +237,5 @@
 		  <publish_topic>/${NAME}</publish_topic>
 		</publish>
 	</sensor>
-
-
-	<block class="nurse_station">
-		<init_pose>15 2 30</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
-	</block>
 
 </mvsim_world>

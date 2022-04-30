@@ -76,7 +76,7 @@ def mission_waypoint(mtype='real',file='lurus_ica_2.npy'):
     if (mtype=='real'):
         mission_waypoint = np.load(os.path.abspath(__file__+'/../waypoints/'+file))
     elif (mtype=='simulation'):
-        mission_waypoint = np.array(waypoints_dummies().straight())
+        mission_waypoint = np.array(waypoints_dummies().turn_left())
     return mission_waypoint
     
 
