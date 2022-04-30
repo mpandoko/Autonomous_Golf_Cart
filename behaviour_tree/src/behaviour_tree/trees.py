@@ -84,10 +84,13 @@ def command_line_argument_parser():
 
 def create_root():
     #parameters
-    v_thres = rospy.get_param('~v_threshold', 5) # m/s
+    v_thres = rospy.get_param('~v_threshold', 0.75) # m/s
     a_maxx = rospy.get_param('~a_max', 0.01) # m/s^2
     prediction_time = rospy.get_param('~pred_time', 2) #s
     v_trackspeed = rospy.get_param('~v_trackspeed', 1) #s
+    mission_type = rospy.get_param('~waypoint_mission','real')
+    mission = cond.mission_waypoint(mtype=mission_type)
+    
     
     #the root
     root = py_trees.composites.Selector("Selector")
@@ -96,14 +99,14 @@ def create_root():
     track_speed = states.TrackSpeed(
         name = "Track Speed",
         curr_state=cond.pose(),
-        waypoint=cond.waypoint(),
+        mission_waypoint=mission,
         a_max = a_maxx,
         v_ts = v_trackspeed
     )
     is_arrive = states.IsArrive(
         name = "Arrive?",
         curr_state=cond.pose(),
-        waypoint=cond.waypoint()
+        mission_waypoint=mission
     )
     stop = states.Stop(name = "Stop")
     is_leader_exist = states.IsLeaderExist(
@@ -121,32 +124,35 @@ def create_root():
     )
     possible_path_exist = states.PossiblePath(
         name="Possible Path?",
-        waypoint=cond.waypoint(),
+        curr_state=cond.pose(),
+        mission_waypoint=mission,
         pred_time=prediction_time,
     )
     #Base states
     follow_leader1 = states.FollowLeader(
         name="Follow Leader",
         curr_state=cond.pose(),
+        mission_waypoint=mission,
         waypoint=cond.waypoint(),
         a_max = a_maxx
     )
     switch_lane = states.SwitchLane(
         name="Switch hLane",
         curr_state=cond.pose(),
-        waypoint=cond.waypoint(),
+        waypoint_mission=mission,
         pred_time=prediction_time,
         a_max=a_maxx
     )
     decelerate = states.DecelerateToStop(
         name="Decelerate to Stop",
         curr_state=cond.pose(),
-        waypoint=cond.waypoint(),
+        mission_waypoint=mission,
         a_max = a_maxx
     )
     follow_leader2 = states.FollowLeader(
         name="Follow Leader",
         curr_state=cond.pose(),
+        mission_waypoint=mission,
         waypoint=cond.waypoint(),
         a_max = a_maxx
     )

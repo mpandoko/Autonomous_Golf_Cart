@@ -165,6 +165,7 @@ catkin_install_python(PROGRAMS
   src/behaviour_tree/trees.py
   src/behaviour_tree/condition.py
   src/behaviour_tree/actions.py
+  src/behaviour_tree/dummies.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

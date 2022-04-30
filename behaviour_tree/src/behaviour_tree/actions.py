@@ -20,6 +20,7 @@ from behaviour_tree.msg import Planner
 from behaviour_tree.local_planner.local_planner import LocalPlanner
 from behaviour_tree.local_planner.collision_checker import CollisionChecker
 from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
+from behaviour_tree.local_planner.spiral_generator import SpiralGenerator
 import behaviour_tree.condition as cond
 
 rospy.init_node('local_planner')
@@ -70,7 +71,7 @@ def transform_paths(path, curv, ego_state):
     return transformed_path
 
 
-def follow_leader(curr_state, waypoint, a_max):
+def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
@@ -81,7 +82,6 @@ def follow_leader(curr_state, waypoint, a_max):
     msg.header.stamp = rospy.Time.now()
     last_time = msg.header.stamp.to_sec() - 1./freq
 
-    print("State estimation received!")
     
     ### Calculate the actual sampling time
     msg.header.stamp = rospy.Time.now()
@@ -98,8 +98,6 @@ def follow_leader(curr_state, waypoint, a_max):
     d_act = cond.leader_distance(waypoint)
     v_cmd = Kgap*(d_act - d_des)
     
-    
-    local_wp = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     x=[]
     y=[]
     yaw=[]
@@ -129,18 +127,21 @@ def follow_leader(curr_state, waypoint, a_max):
     y_ = []
     yaw_ = []
     curv_ = []
-    a,b = get_start_and_lookahead_index(local_wp, curr_state[0],curr_state[1], ld_dist)
+    a,b = get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
+    dx = curr_state[0]-mission_waypoint[a][0]
+    dy = curr_state[1]-mission_waypoint[a][1]
+    
     for i in range (a,b):
-        x_.append(local_wp[i][0])
-        y_.append(local_wp[i][1])
-        yaw_.append(local_wp[i][2])
-        curv_.append(local_wp[i][4])
+        x_.append(mission_waypoint[i][0]+dx)
+        y_.append(mission_waypoint[i][1]+dy)
+        yaw_.append(mission_waypoint[i][2])
+        curv_.append(mission_waypoint[i][4])
     path = [x_,y_,yaw_,curv_]
     wp = vp.nominal_profile(path,curr_state[3],v_cmd)
     
     for i in range(len(wp)):
-        x.append(wp[i][0]+waypoint[0][0])
-        y.append(wp[i][1]+waypoint[0][1])
+        x.append(wp[i][0])
+        y.append(wp[i][1])
         yaw.append(wp[i][2])
         v.append(wp[i][3])
         curv.append(wp[i][4])
@@ -185,7 +186,7 @@ def follow_leader(curr_state, waypoint, a_max):
     # # Publish the message
     pub.publish(msg)
     
-def track_speed(curr_state, waypoint, v_ts, a_max):
+def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
@@ -205,9 +206,7 @@ def track_speed(curr_state, waypoint, v_ts, a_max):
     
     print("Planning velocity...")
     v_cmd = v_ts
-    
-    
-    local_wp = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
+
     x=[]
     y=[]
     yaw=[]
@@ -231,26 +230,31 @@ def track_speed(curr_state, waypoint, v_ts, a_max):
     
     """
     Cara kedua cuma ubah v nya
+    Batasan dan asumsi: Mobil bergerak lurus
+    Saran: Mobil tidak bisa mengikuti path melengkung
     """
     # Get current index to lookahead index
     x_ = []
     y_ = []
     yaw_ = []
     curv_ = []
-    a,b = get_start_and_lookahead_index(local_wp, curr_state[0],curr_state[1], ld_dist)
+    a,b = get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
+    dx = curr_state[0]-mission_waypoint[a][0]
+    dy = curr_state[1]-mission_waypoint[a][1]
+    
     for i in range (a,b):
-        x_.append(local_wp[i][0])
-        y_.append(local_wp[i][1])
-        yaw_.append(local_wp[i][2])
-        curv_.append(local_wp[i][4])
+        x_.append(mission_waypoint[i][0]+dx)
+        y_.append(mission_waypoint[i][1]+dy)
+        yaw_.append(mission_waypoint[i][2])
+        curv_.append(mission_waypoint[i][4])
     path = [x_,y_,yaw_,curv_]
     wp = vp.nominal_profile(path,curr_state[3],v_cmd)
     
     for i in range(len(wp)):
-        x.append(wp[i][0]+waypoint[0][0])
-        y.append(wp[i][1]+waypoint[0][1])
+        x.append(wp[i][0])
+        y.append(wp[i][1])
         yaw.append(wp[i][2])
-        v.append(wp[i][3])
+        v.append(v_cmd)
         curv.append(wp[i][4])
     
     ### Send the message
@@ -293,7 +297,7 @@ def track_speed(curr_state, waypoint, v_ts, a_max):
     # Publish the message
     pub.publish(msg)
     
-def decelerate_to_stop(curr_state, waypoint, a_max):
+def decelerate_to_stop(curr_state, xf,yf,yawf, a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
@@ -303,8 +307,6 @@ def decelerate_to_stop(curr_state, waypoint, a_max):
     msg.header.seq = 0
     msg.header.stamp = rospy.Time.now()
     last_time = msg.header.stamp.to_sec() - 1./freq
-
-    print("State estimation received!")
     
     ### Calculate the actual sampling time
     msg.header.stamp = rospy.Time.now()
@@ -314,8 +316,6 @@ def decelerate_to_stop(curr_state, waypoint, a_max):
     print("Planning velocity...")
     v_cmd = 0
     
-    
-    local_wp = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     x=[]
     y=[]
     yaw=[]
@@ -324,39 +324,20 @@ def decelerate_to_stop(curr_state, waypoint, a_max):
     
     #generate velocity
     vp = VelocityPlanner(a_max)
-    
-    """
-    Cara Pertama bikin path, terus di generate waypoint baru, masih error di g_setnya
-    """
-    # lp = LocalPlanner(waypoint, ld_dist, 1, offset)
-    
-    # # Generate path
-    # ld_idx = lp.get_lookahead_index(curr_state[0],curr_state[1])
-    # path = lp.plan_paths([waypoint[ld_idx]])
-    # tf_paths = lp.transform_paths(path[0], curr_state)
-    # wp = vp.nominal_profile(tf_paths[0], curr_state[3],v_cmd)
-    # 
-    
-    """
-    Cara kedua cuma ubah v nya
-    """
-    # Get current index to lookahead index
-    x_ = []
-    y_ = []
-    yaw_ = []
-    curv_ = []
-    a,b = get_start_and_lookahead_index(local_wp, curr_state[0],curr_state[1], ld_dist)
-    for i in range (a,b):
-        x_.append(local_wp[i][0])
-        y_.append(local_wp[i][1])
-        yaw_.append(local_wp[i][2])
-        curv_.append(local_wp[i][4])
-    path = [x_,y_,yaw_,curv_]
-    wp = vp.nominal_profile(path,curr_state[3],v_cmd)
+    path_generator = SpiralGenerator()
+    path = path_generator.optimize_spiral(
+            xf-curr_state[0],
+            yf-curr_state[1],
+            yawf-curr_state[2]
+        )
+    curv = path_generator.get_curvature()
+    tf_path = transform_paths(path,curv,curr_state)
+
+    wp = vp.nominal_profile(tf_path,curr_state[3],v_cmd)
     
     for i in range(len(wp)):
-        x.append(wp[i][0]+waypoint[0][0])
-        y.append(wp[i][1]+waypoint[0][1])
+        x.append(wp[i][0])
+        y.append(wp[i][1])
         yaw.append(wp[i][2])
         v.append(wp[i][3])
         curv.append(wp[i][4])
@@ -401,7 +382,7 @@ def decelerate_to_stop(curr_state, waypoint, a_max):
     # Publish the message
     pub.publish(msg)
 
-def switch_lane(curr_state,waypoints,pred_time,a_max):
+def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     freq = rospy.get_param('~freq', 5.) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     n_offset = rospy.get_param('~n_offset', 5) # m
@@ -409,12 +390,9 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     c_location = rospy.get_param('~c_location', [-1, 1, 3]) # m
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
-
-    x0 = waypoints[0][0]
-    y0 = waypoints[0][1]
-    waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]
+    
     # Create local planner classes
-    lp = LocalPlanner(waypoints, ld_dist, n_offset, offset)
+    lp = LocalPlanner(mission_waypoints, ld_dist, n_offset, offset)
     cc = CollisionChecker(c_location, c_rad, d_weight)
     vp = VelocityPlanner(a_max)
     
@@ -450,29 +428,21 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     #Local Planner
     print('Generating feasible paths...')
     
-    # Format [x, y, t, v]
-    print('Current yaw: ', curr_state[2])
-    print('Current x, y: ', curr_state[:2])
     # Get lookahead index
     ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
-    print('Lookahead yaw: ', waypoints[ld_idx][2])
+    print('Lookahead yaw: ', mission_waypoints[ld_idx][2])
     
-    # Get offset goal states
-    g_set = lp.get_goal_state_set(waypoints[ld_idx], curr_state)
+    # Get offset goal states, pada acuan lokal
+    g_set = lp.get_goal_state_set(mission_waypoints[ld_idx], curr_state)
     
-    # Plan paths
+    # Plan paths, dengan acuan local ke gset acuan local
     path_generated = lp.plan_paths(g_set)
     
     print('Path generated!')
     print('Status:', path_generated[1])
 
-    obstacles = cond.obstacles_classifier()
     # Assign object points to array
-
-    # obj_ = np.zeros([len(x), 2])
-    # for obstacle in obstacles:
-    #     z, x = cond.occupancy_grid(obstacle, pred_time)
-    #     obj_[i] = [z[i], x[i]]
+    obstacles = cond.obstacles_classifier()
     obj_ = []
     x_ = []
     z_ = []
@@ -483,6 +453,7 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     for i in range (len(x_)):
         obj_.append([x_[i],z_[i]])
     obj_ = np.array(obj_)  
+    
 # =============================================================================
 #     # Plot data for debugging
 #     plt.clf()
@@ -499,7 +470,7 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     
     # Collision Check
     coll = cc.collision_check(path_generated[0], obj_)
-    print(coll)
+    print('select:',coll)
     bp = cc.path_selection(path_generated[0], coll, g_set[n_offset//2])
     
     # Declare variables
@@ -512,12 +483,13 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     # Set waypoints type
     wp_type = 1
     
-    # Transform paths
+    # Transform paths, ke acuan global
     tf_paths = lp.transform_paths(path_generated[0], curr_state)
     
     # Generate waypoints with speed and curvature
     # Format [x, y, t, v, curv]
     best_wp = vp.nominal_profile(tf_paths[bp], curr_state[-1], g_set[bp][-1])
+    # print("wp_generated: ",best_wp)
 
     # Add starting waypoints
     wp_0 = curr_state
@@ -530,7 +502,7 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     for i in range(len(best_wp)):
         x.append(best_wp[i][0])
         y.append(best_wp[i][1])
-        yaw.append(best_wp[i][2]+np.pi/5)
+        yaw.append(best_wp[i][2])
         v.append(best_wp[i][3])
         curv.append(best_wp[i][4])
     
@@ -551,27 +523,27 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
     # Plot for debuging
     idx = [i for i in range(len(v))]
     
-    xwp = []
-    ywp = []
-    for i in range (len(waypoints)):
-        xwp.append(waypoints[i][0])
-        ywp.append(waypoints[i][1])
+    # xwp = []
+    # ywp = []
+    # for i in range (len(waypoints)):
+    #     xwp.append(waypoints[i][0])
+    #     ywp.append(waypoints[i][1])
     
     import matplotlib.pyplot as plt
     # plt.subplot(1,2,1)
-    plt.plot(x,y,'ro')
-    # plt.plot(xwp,ywp,'go')
-    plt.title('local path generated by local planner')
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.show()
+    # plt.plot(x,y,'ro')
+    # # plt.plot(xwp,ywp,'go')
+    # plt.title('local path generated by local planner')
+    # plt.xlabel('x')
+    # plt.ylabel('y')
+    # plt.show()
     
-    # plt.subplot(1,2,2)
-    plt.plot(idx,v,'b')
-    plt.title('velocity planeer vs index')
-    plt.xlabel('i')
-    plt.ylabel('v')
-    plt.show()
+    # # plt.subplot(1,2,2)
+    # plt.plot(idx,v,'b')
+    # plt.title('velocity planeer vs index')
+    # plt.xlabel('i')
+    # plt.ylabel('v')
+    # plt.show()
     
     # Publish the message
     pub.publish(msg)
@@ -587,7 +559,9 @@ def switch_lane(curr_state,waypoints,pred_time,a_max):
             z_ = z_+z
             
         # Collision Check
-        coll = cc.collision_check([best_wp], obj_)
-        print('Still switching lane, no collision happen')
+        coll = cc.collision_check([path_generated[0][bp]], obj_)
+        print("Vehicle is switching lane, no collision detected")
         if not coll:
+            print("STATUS: Collision detected, switching lane end")
             break
+        print("STATUS: Vehicle has successfully switched lane")

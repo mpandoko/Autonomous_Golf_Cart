@@ -33,11 +33,12 @@ import numpy as np
 from behaviour_tree.local_planner.collision_checker import CollisionChecker
 from behaviour_tree.local_planner.local_planner import LocalPlanner
 from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
+
 from multiprocessing.pool import RUN
 from persepsi.msg import obj_points
 from behaviour_tree.msg import Planner, ukf_states
 
-from behaviour_tree.dummies import obstacle
+from behaviour_tree.dummies import obstacle,waypoints_dummies
 
 RUN = False
 
@@ -71,13 +72,23 @@ def planner_callback(planner_msg):
     wp_planner['v'] = planner_msg.v
     wp_planner['curv'] = planner_msg.curv
 
+def mission_waypoint(mtype='real',file='lurus_ica_2.npy'):
+    if (mtype=='real'):
+        mission_waypoint = np.load(os.path.abspath(__file__+'/../waypoints/'+file))
+    elif (mtype=='simulation'):
+        mission_waypoint = np.array(waypoints_dummies().straight())
+    return mission_waypoint
+    
+
 def waypoint():
+    """
+    Return updated waypoint from published waypoints
+    """
     global wp_planner
     
     curr_waypoint = []
     if (wp_planner['wp_type']==None):
-        curr_waypoint = np.load(os.path.abspath(__file__+'/../waypoints/lurus_ica_2.npy'))
-        # curr_waypoint = curr_waypoint - [curr_waypoint[0][0],curr_waypoint[0][1],0,0,0]
+        curr_waypoint = mission_waypoint()
     else:
         for i in range (len(wp_planner['x'])):
             curr_waypoint.append([wp_planner['x'][i],wp_planner['y'][i],wp_planner['yaw'][i],wp_planner['v'][i],wp_planner['curv'][i]])
@@ -86,7 +97,7 @@ def waypoint():
 def pose():
     global local_state
     global RUN
-    wp = waypoint()
+    wp = mission_waypoint(mtype='simulation')
     
     # parameter adjustment for yaw and waypoints
     # where the local state.
@@ -94,10 +105,11 @@ def pose():
     global first_yaw
     if (not RUN):
         first_yaw = local_state['yaw']
-        # print('fy = ',first_yaw)
+        print('fy = ',first_yaw)
     else:
         first_yaw = first_yaw
-        
+    
+    # Step 1: Yaw disamakan dalam UTM, dalam kasus ini, Waypoints dianggap sudah UTM
     curr_state = [local_state['x'], local_state['y'], local_state['yaw']-(first_yaw-wp[0][2]), local_state['v']]
     print("current_local state = ", curr_state)
     RUN = False
@@ -123,7 +135,7 @@ def d_rem(curr_state,waypoint):
 #Memisahkan data object points untuk setiap object
 def obstacles_classifier():
     # global obj
-    obj = obstacle(distance=7).slow()
+    obj = obstacle().free()
     
     # print('x,z = (',obj['xc'],obj['zc'],')')
     # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
@@ -236,7 +248,7 @@ def occupancy_grid(obstacle, pred_time):
 # checking every path generated
 # is there free collision path
 # The output is either True or None
-def possible_path(waypoints, pred_time):
+def possible_path(curr_state,mission_waypoints, pred_time):
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     n_offset = rospy.get_param('~n_offset', 5) # m
     offset = rospy.get_param('~offset', 3) # m
@@ -244,28 +256,18 @@ def possible_path(waypoints, pred_time):
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     
-    waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]
-    lp = LocalPlanner(waypoints, ld_dist, n_offset, offset)
+    # waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]
+    lp = LocalPlanner(mission_waypoints, ld_dist, n_offset, offset)
     cc = CollisionChecker(c_location, c_rad, d_weight)
     
-    curr_state = pose()
-
-    print("State estimation received!")
-    print("Planning local paths...")
+    
     ### Generate feasible paths for collision checker
-    print('Generating feasible paths...')
-    
-    
-    # Set waypoints type (0: global, 1: local)
-    wp_type = 0
-    
     # Get lookahead index
     ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
-    print('Lookahead: ', waypoints[ld_idx])
-
+    # print('Lookahead: ', mission_waypoints[ld_idx])
     
     # Get offset goal states
-    g_set = lp.get_goal_state_set(waypoints[ld_idx], curr_state)
+    g_set = lp.get_goal_state_set(mission_waypoints[ld_idx], curr_state)
     
     # Plan paths
     path_generated = lp.plan_paths(g_set)
@@ -273,9 +275,8 @@ def possible_path(waypoints, pred_time):
     print('Path generated!')
     print('Status:', path_generated[1])
     
-    obstacles = obstacles_classifier()
-
     # Assign object points to array
+    obstacles = obstacles_classifier()
     obj_ = []
     x_ = []
     z_ = []
@@ -283,14 +284,12 @@ def possible_path(waypoints, pred_time):
         x, z = occupancy_grid(obstacle,pred_time)
         x_ = x_+x
         z_ = z_+z
-
     for i in range (len(x_)):
         obj_.append([x_[i],z_[i]])
-
     obj_ = np.array(obj_)
+    
     # Collision check for every path generated
     coll = cc.collision_check(path_generated[0], obj_)
-    
     print("Free collision checker: ",coll)
 
     for i in range (len(coll)):

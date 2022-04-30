@@ -14,37 +14,15 @@ import behaviour_tree.condition as cond
 import behaviour_tree.actions as act
 import py_trees
 
-class TrackSpeed(py_trees.behaviour.Behaviour):
-    def __init__(self, name, curr_state, waypoint, a_max, v_ts, topic_name="wp_planner"):
-        super(TrackSpeed, self).__init__(name=name)
-        self.curr_state = curr_state
-        self.waypoint = waypoint
-        self.a_max = a_max
-        self.v_ts = v_ts
-        self.topic_name = topic_name
-    
-    def setup(self, timeout):
-        # self.publisher = rospy.Publisher(self.topic_name, Planner, queue_size=1)
-        self.feedback_message = "setup"
-        return True
-    
-    def update(self):
-        self.logger.debug("%s.update()" % self.__class__.__name__)
-        
-        #the track speed code
-        act.track_speed(self.curr_state, self.waypoint, self.a_max, self.v_ts)
-        
-        print("Vehicle run in constant velocity")
-        return py_trees.common.Status.SUCCESS
-    
-    def terminate(self, new_status):
-        return super().terminate(new_status)
-    
+################################
+## Condition ##
+################################
+
 class IsArrive(py_trees.behaviour.Behaviour):
-    def __init__(self, name, curr_state, waypoint):
+    def __init__(self, name, curr_state, mission_waypoint):
         super(IsArrive, self).__init__(name=name)
         self.curr_state = curr_state
-        self.waypoint = waypoint
+        self.mission_waypoint = mission_waypoint
     
     def setup(self, timeout):
         self.feedback_message = "setup"
@@ -52,38 +30,16 @@ class IsArrive(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        print('current state = ',self.curr_state)
-        print('waypoint yaw = ',self.waypoint[0][2])
         #Checking remaining distance of arrival point
-        d_remain = cond.d_rem(self.curr_state, self.waypoint)
+        d_remain = cond.d_rem(self.curr_state, self.mission_waypoint)
         print("is vehicle almost arrive?")
-        print('the distance is',d_remain,'m again')
-        if (d_remain<=4):
+        if (d_remain<=10):
             self.feedback_message = "Okey, Let's Stop"
-            print("Yes! We will slowdown")
+            print("Yes! 10 meters again, we will slowdown")
             return py_trees.common.Status.SUCCESS
         else:
-            print("Nope, keep running!")
+            print("Nope the distance is: %2.f meters again, keep running!" % d_remain)
             return py_trees.common.Status.FAILURE
-    
-    def terminate(self, new_status):
-        return super().terminate(new_status)
-    
-class Stop(py_trees.behaviour.Behaviour):
-    def __init__(self, name, topic_name="wp_planner"):
-        super(Stop, self).__init__(name=name)
-        self.topic_name = topic_name
-    
-    def setup(self, timeout):
-        # self.publisher = rospy.Publisher(self.topic_name, Planner, queue_size=1)
-        self.feedback_message = "setup"
-        return True
-    
-    def update(self):
-        self.logger.debug("%s.update()" % self.__class__.__name__)
-        #the stop code
-        print("We are in the stop condition, be patient!")
-        return py_trees.common.Status.SUCCESS
     
     def terminate(self, new_status):
         return super().terminate(new_status)
@@ -140,9 +96,10 @@ class IsLeaderFast(py_trees.behaviour.Behaviour):
         return super().terminate(new_status)
     
 class PossiblePath(py_trees.behaviour.Behaviour):
-    def __init__(self, name, waypoint, pred_time):
+    def __init__(self, name, curr_state, mission_waypoint, pred_time):
         super(PossiblePath, self).__init__(name=name)
-        self.waypoint = waypoint
+        self.curr_state = curr_state
+        self.mission_waypoint = mission_waypoint
         self.pred_time = pred_time
         
     def setup(self, timeout):
@@ -153,7 +110,7 @@ class PossiblePath(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #Checking is leader velocity in front of vehicle
-        possible_path = cond.possible_path(self.waypoint, self.pred_time)
+        possible_path = cond.possible_path(self.curr_state, self.mission_waypoint, self.pred_time)
         if possible_path:
             self.feedback_message = "and there is possible path"
             print("and there is possible path")
@@ -166,10 +123,63 @@ class PossiblePath(py_trees.behaviour.Behaviour):
     def terminate(self, new_status):
         return super().terminate(new_status)
     
+################################
+## Action ##
+################################
+
+class TrackSpeed(py_trees.behaviour.Behaviour):
+    def __init__(self, name, curr_state, mission_waypoint, a_max, v_ts, topic_name="wp_planner"):
+        super(TrackSpeed, self).__init__(name=name)
+        self.curr_state = curr_state
+        self.mission_waypoint = mission_waypoint
+        self.a_max = a_max
+        self.v_ts = v_ts
+        self.topic_name = topic_name
+    
+    def setup(self, timeout):
+        # self.publisher = rospy.Publisher(self.topic_name, Planner, queue_size=1)
+        self.feedback_message = "setup"
+        return True
+    
+    def update(self):
+        self.logger.debug("%s.update()" % self.__class__.__name__)
+        
+        #the track speed code
+        act.track_speed(self.curr_state, self.mission_waypoint, self.a_max, self.v_ts)
+        
+        print("STATUS: Vehicle runs in constant velocity")
+        print("================== Tick ends, to the next run =====================")
+        return py_trees.common.Status.SUCCESS
+    
+    def terminate(self, new_status):
+        return super().terminate(new_status)
+
+    
+class Stop(py_trees.behaviour.Behaviour):
+    def __init__(self, name, topic_name="wp_planner"):
+        super(Stop, self).__init__(name=name)
+        self.topic_name = topic_name
+    
+    def setup(self, timeout):
+        # self.publisher = rospy.Publisher(self.topic_name, Planner, queue_size=1)
+        self.feedback_message = "setup"
+        return True
+    
+    def update(self):
+        self.logger.debug("%s.update()" % self.__class__.__name__)
+        #the stop code
+        print("STATUS; Vehicle is stop")
+        print("================== Tick ends, to the next run =====================")
+        return py_trees.common.Status.SUCCESS
+    
+    def terminate(self, new_status):
+        return super().terminate(new_status)
+    
 class FollowLeader(py_trees.behaviour.Behaviour):
-    def __init__(self, name, curr_state, waypoint, a_max, topic_name="wp_planner"):
+    def __init__(self, name, curr_state, mission_waypoint, waypoint, a_max, topic_name="wp_planner"):
         super(FollowLeader, self).__init__(name=name)
         self.curr_state = curr_state
+        self.mission_waypoint = mission_waypoint
         self.waypoint = waypoint
         self.a_max = a_max
         self.topic_name = topic_name
@@ -183,20 +193,21 @@ class FollowLeader(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #the follow leader code
-        act.follow_leader(self.curr_state, self.waypoint, self.a_max)
+        act.follow_leader(self.curr_state, self.mission_waypoint, self.waypoint, self.a_max)
         
-        print("We should follow the leader!")
+        print("STATUS: Vehicle follows the leader!")
+        print("================== Tick ends, to the next run =====================")
         return py_trees.common.Status.SUCCESS
     
     def terminate(self, new_status):
         return super().terminate(new_status)
     
 class SwitchLane(py_trees.behaviour.Behaviour):
-    def __init__(self, name, curr_state, waypoint, pred_time, a_max, topic_name="wp_planner"):
+    def __init__(self, name, curr_state, waypoint_mission, pred_time, a_max, topic_name="wp_planner"):
         super(SwitchLane, self).__init__(name=name)
         self.topic_name = topic_name
         self.curr_state = curr_state
-        self.waypoint = waypoint
+        self.mission_waypoint = waypoint_mission
         self.pred_time = pred_time
         self.a_max = a_max
     
@@ -209,20 +220,18 @@ class SwitchLane(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #the switch lane code
-        print("switching lane")
-        act.switch_lane(self.curr_state, self.waypoint, self.pred_time, self.a_max)
-        
-        print("We have to switch lane!")
+        act.switch_lane(self.curr_state, self.mission_waypoint, self.pred_time, self.a_max)
+        print("================== Tick ends, to the next run =====================")
         return py_trees.common.Status.SUCCESS
     
     def terminate(self, new_status):
         return super().terminate(new_status)
     
 class DecelerateToStop(py_trees.behaviour.Behaviour):
-    def __init__(self, name, curr_state, waypoint, a_max, topic_name="wp_planner"):
+    def __init__(self, name, curr_state, mission_waypoint, a_max, topic_name="wp_planner"):
         super(DecelerateToStop, self).__init__(name=name)
         self.curr_state = curr_state
-        self.waypoint = waypoint
+        self.mission_waypoint = mission_waypoint
         self.a_max = a_max
         self.topic_name = topic_name
     
@@ -235,9 +244,16 @@ class DecelerateToStop(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #the decelerate to stop code
-        act.decelerate_to_stop(self.curr_state, self.waypoint, self.a_max)
+        act.decelerate_to_stop(
+            self.curr_state,
+            self.mission_waypoint[-1][0],
+            self.mission_waypoint[-1][1],
+            self.mission_waypoint[-1][2],
+            self.a_max
+        )
         
-        print("Unfortunately, we must stop!")
+        print("STATUS: Vehicle decelerates to stop")
+        print("================== Tick ends, to the next run =====================")
         return py_trees.common.Status.SUCCESS
     
     def terminate(self, new_status):

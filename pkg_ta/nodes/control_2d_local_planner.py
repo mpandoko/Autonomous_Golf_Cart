@@ -6,17 +6,21 @@ import time
 import sys
 import os
 from math import atan2
-#sys.path.append(os.path.abspath(sys.path[0] + '/../'))
+
+
 from pkg_ta.msg import Control
 from pkg_ta.msg import ukf_states
-from local_planner.msg import Planner
+import behaviour_tree.condition as cond
+
+sys.path.append(os.path.abspath(__file__ + '/../../../'))
+from behaviour_tree.msg import Planner
 
 min_throttle = 0.0
 max_throttle = 0.25
 max_steer_arduino = 28.
 min_steer_arduino = -35.
 
-sys.path.append(os.path.abspath(sys.path[0] + '/../../pkg_ta/src/Python'))
+sys.path.append(os.path.abspath(__file__ + '/../../src/Python'))
 from stanley_2d import Controller
 # from lyapunov_rl import Controller
 
@@ -71,13 +75,15 @@ kv = rospy.get_param('~kv', 1.00)
 lateral_dead_band = rospy.get_param('~lateral_dead_band', 0.025)
 sat_lat_max = rospy.get_param('~sat_lat_max', 0.6109)
 sat_lat_min = rospy.get_param('~sat_lat_min', -0.4887)
-waypoints_path = rospy.get_param('~waypoints_path', 'wp_monev_baru.npy')
-waypoints_path = os.path.abspath(sys.path[0] + '/../../pkg_ta/src/waypoints/waypoints/' + waypoints_path)
+# waypoints_path = rospy.get_param('~waypoints_path', 'wp_monev_baru.npy')
+# waypoints_path = os.path.abspath(sys.path[0] + '/../../pkg_ta/src/waypoints/waypoints/' + waypoints_path)
 
 feed_forward_params = np.array([ff_1, ff_2])
 sat_long = np.array([sat_long_min, sat_long_max])
 sat_lat = np.array([sat_lat_min, sat_lat_max])
-waypoints = np.load(waypoints_path)
+
+# waypoints = np.load(waypoints_path)
+waypoints = cond.mission_waypoint(mtype='simulation')
 
 # Create the controller object
 controller = Controller(kp, ki, kd, feed_forward_params, sat_long,\
