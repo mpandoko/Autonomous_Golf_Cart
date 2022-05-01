@@ -111,6 +111,7 @@ def create_root():
     stop = states.Stop(name = "Stop")
     is_leader_exist = states.IsLeaderExist(
         name="Leader?",
+        curr_state=cond.pose(),
         waypoint=cond.waypoint())
     fallb_states = py_trees.composites.Selector("Select States")
     seq_follow = py_trees.composites.Sequence("Seq Follow Leader")
@@ -120,6 +121,7 @@ def create_root():
     leader_fast = states.IsLeaderFast(
         name="Leader>?",
         v_threshold= v_thres,
+        curr_state=cond.pose(),
         waypoint=cond.waypoint()
     )
     possible_path_exist = states.PossiblePath(

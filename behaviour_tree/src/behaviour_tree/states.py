@@ -45,9 +45,10 @@ class IsArrive(py_trees.behaviour.Behaviour):
         return super().terminate(new_status)
 
 class IsLeaderExist(py_trees.behaviour.Behaviour):
-    def __init__(self, name, waypoint):
+    def __init__(self, name, curr_state, waypoint):
         super(IsLeaderExist, self).__init__(name=name)
         self.waypoint = waypoint
+        self.curr_state = curr_state
     
     def setup(self, timeout):
         self.feedback_message = "setup"
@@ -57,7 +58,7 @@ class IsLeaderExist(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #Checking is there a leader in front of vehicle
-        leader = cond.is_leader_ex(self.waypoint)
+        leader = cond.is_leader_ex(self.curr_state,self.waypoint)
         if leader:
             self.feedback_message = "Obstacle in front of us"
             print("Oh no, there is leader in front of us")
@@ -69,11 +70,11 @@ class IsLeaderExist(py_trees.behaviour.Behaviour):
         return super().terminate(new_status)
     
 class IsLeaderFast(py_trees.behaviour.Behaviour):
-    def __init__(self, name, v_threshold, waypoint):
+    def __init__(self, name, v_threshold, curr_state,waypoint):
         super(IsLeaderFast, self).__init__(name=name)
         self.v_threshold = v_threshold
         self.waypoint = waypoint
-    
+        self.curr_state = curr_state
     def setup(self, timeout):
         self.feedback_message = "setup"
         return True
@@ -82,7 +83,7 @@ class IsLeaderFast(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #Checking is leader velocity in front of vehicle
-        v_leader = cond.leader_velocity(self.waypoint)
+        v_leader = cond.leader_velocity(self.curr_state,self.waypoint)
         if (v_leader>self.v_threshold):
             self.feedback_message = "but it is fast"
             print("but it is fast")

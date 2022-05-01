@@ -25,7 +25,10 @@ subscribing and processong the data needed for behaviour trees processes
 # Imports
 ##############################################################################
 
+from calendar import c
 import os
+
+from matplotlib.pyplot import get
 import rospy
 import numpy as np
 
@@ -93,6 +96,7 @@ def waypoint():
     else:
         for i in range (len(wp_planner['x'])):
             curr_waypoint.append([wp_planner['x'][i],wp_planner['y'][i],wp_planner['yaw'][i],wp_planner['v'][i],wp_planner['curv'][i]])
+            np.array(curr_waypoint)
     return curr_waypoint
 
 def pose():
@@ -119,15 +123,14 @@ def pose():
     return curr_state
 
 #Mereturn jarak kendaraan saat ini dengan titik tujuan
-def d_rem(curr_state,waypoint):
-    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
+def d_rem(curr_state,mission_waypoint):
     #State mobil sekarang
     x1 = curr_state[0]
     y1 = curr_state[1]
     
     #Titik akhir tujuan
-    x2 = waypoint[-1][0]
-    y2 = waypoint[-1][1]
+    x2 = mission_waypoint[-1][0]
+    y2 = mission_waypoint[-1][1]
 
     # print('x1x2y1y2 = ')
     # print(x1,x2,y1,y2)
@@ -169,38 +172,42 @@ def obstacles_classifier():
 # Memeriksa apakah ada objek. dimana:
 # - waypoint = [x,y,yaw,curve,v]
 # - obj_ adalah matriks objek dalam occupancy grid
-
-def leader_selection(waypoint):
+def leader_selection(curr_state,waypoint):
     c_location = rospy.get_param('~c_location', [-1.0, 1.0, 3.0]) # m
     c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     #Colllision Check Class
-    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     cc = CollisionChecker(c_location, c_rad, d_weight)
+    
+    
     obstacles = obstacles_classifier()
     obj_coll_id = []
     obj_coll_zc = []
     obc_coll_vzc = []
 
+    idx = get_start_and_lookahead_index(waypoint,curr_state[0],curr_state[1],0)
+    yaw = curr_state[2]-waypoint[idx[0]][2]
+    
     x_p = []
     y_p = []
     t_p = []
-    for i in range (len(waypoint)):
-        x_p.append(waypoint[i][0])
-        y_p.append(waypoint[i][1])
-        t_p.append(waypoint[i][2])
+    for i in range (idx[0],len(waypoint)):
+        x_p.append(waypoint[i][0]-waypoint[idx[0]][0])
+        y_p.append(waypoint[i][1]-waypoint[idx[0]][1])
+        t_p.append(waypoint[i][2]-waypoint[idx[0]][2])
     path = [x_p, y_p, t_p]
     paths = [path]
 
     for obstacle in obstacles:
-        x = obstacle['obj_x']
-        z = obstacle['obj_z']
-
         # Assign object points to array
-        obj_ = np.zeros([len(x), 2])
-        for i in range(len(x)):
-            obj_[i] = [z[i], x[i]]
-
+        objs_ = occupancy_grid(obstacle,0)
+        print('objs::::',len(objs_))
+        obj_ = []
+        for i in range (len(objs_[0])):
+            obj_.append([objs_[0][i],objs_[1][i]])
+        obj_ = np.array(obj_)
+    
+        # print(obj_)
         # coll:
         # return True if the path is free collision
         # return False if the path is collided
@@ -212,44 +219,74 @@ def leader_selection(waypoint):
             if (not len(obj_coll_zc)) or obj_coll_zc > [obstacle['zc']]:
                 obj_coll_id = [obstacle['id']]
                 obj_coll_zc = [obstacle['zc']]
-                obc_coll_vzc = [obstacle['vzc']]
+                obc_coll_vzc = [obstacle['vzc']+curr_state[3]*np.cos(yaw)]
     return [obj_coll_id, obc_coll_vzc, obj_coll_zc]
 
-def is_leader_ex(waypoint):
+def is_leader_ex(curr_state,waypoint):
     waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
-    id = leader_selection(waypoint)[0]
+    id = leader_selection(curr_state,waypoint)[0]
     if (len(id)):
         return True
     else:
         return False
     
-def leader_velocity(waypoint):
+def leader_velocity(curr_state,waypoint):
     waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
-    vzc = leader_selection(waypoint)[1]
-    return vzc[0]
+    vzc = leader_selection(curr_state,waypoint)[1][0]
+    return vzc
 
-def leader_distance(waypoint):
+def leader_distance(curr_state,waypoint):
     waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
-    zc = leader_selection(waypoint)[2]
-    return zc[0]
+    zc = leader_selection(curr_state,waypoint)[2][0]
+    return zc
+
+def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
+    min_idx       = 0
+    min_dist      = np.inf
+    for i in range(len(waypoint)):
+        dist = np.linalg.norm(np.array([
+                waypoint[i][0] - x,
+                waypoint[i][1] - y]))
+        if dist < min_dist:
+            min_dist = dist
+            min_idx = i
+
+    total_dist = min_dist
+    lookahead_idx = min_idx
+    for i in range(min_idx + 1, len(waypoint)):
+        if total_dist >= ld_dist:
+            break
+        total_dist += np.linalg.norm(np.array([
+                waypoint[i][0] - waypoint[i-1][0],
+                waypoint[i][1] - waypoint[i-1][1]]))
+        lookahead_idx = i
+    
+    return min_idx,lookahead_idx
+
 
 # Occupancy Grid filler for one object,
 # with additional grid for object moving based on predicted time.
 def occupancy_grid(obstacle, pred_time):
-    obj_x = []
-    obj_z = []
-    vxc = obstacle['vxc']
-    vzc = obstacle['vzc']
+    mission = mission_waypoint()
+    curr_state = pose()
+    idx = get_start_and_lookahead_index(mission,curr_state[0],curr_state[1],0)
+    yaw = curr_state[2]-mission[idx[0]][2]
+    x_ = []
+    y_ = []
+    vx_ = obstacle['vzc']
+    vy_ = obstacle['vxc']
 
     for i in range (len(obstacle['obj_x'])):
-        obj_x.append(obstacle['obj_x'][i])
-        obj_z.append(obstacle['obj_z'][i])
+        x = obstacle['obj_z'][i]
+        y = obstacle['obj_x'][i]
+        x_.append(x*np.cos(-yaw)-y*np.sin(-yaw))
+        y_.append(x*np.sin(-yaw)+y*np.cos(-yaw))
 
     for i in range(pred_time-1):
-        for j in range(len(obj_x)):
-            obj_x.append(obj_x[j] + vxc*(i+1))
-            obj_z.append(obj_z[j] + vzc*(i+1))
-    return obj_z, obj_x
+        for j in range(len(x_)):
+            x_.append(x_[j] + vx_*(i+1))
+            y_.append(y_[j] + vy_*(i+1))
+    return x_, y_
 
 
 # checking every path generated
