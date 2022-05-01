@@ -24,29 +24,6 @@ import behaviour_tree.condition as cond
 
 # rospy.init_node('action')
 
-def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
-    min_idx       = 0
-    min_dist      = np.inf
-    for i in range(len(waypoint)):
-        dist = np.linalg.norm(np.array([
-                waypoint[i][0] - x,
-                waypoint[i][1] - y]))
-        if dist < min_dist:
-            min_dist = dist
-            min_idx = i
-
-    total_dist = min_dist
-    lookahead_idx = min_idx
-    for i in range(min_idx + 1, len(waypoint)):
-        if total_dist >= ld_dist:
-            break
-        total_dist += np.linalg.norm(np.array([
-                waypoint[i][0] - waypoint[i-1][0],
-                waypoint[i][1] - waypoint[i-1][1]]))
-        lookahead_idx = i
-    
-    return min_idx,lookahead_idx
-
 def transform_paths(path, curv, ego_state):
     """
     Transforms the local paths to the global frame
@@ -94,7 +71,7 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     d_min = 2.4
     l_veh = 2.4
     d_des = max(l_veh*curr_state[3]/5, d_min)
-    d_act = cond.leader_distance(waypoint)
+    d_act = cond.leader_distance(curr_state,waypoint)
     v_cmd = Kgap*(d_act - d_des)
     
     x=[]
@@ -126,7 +103,7 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     y_ = []
     yaw_ = []
     curv_ = []
-    a,b = get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
+    a,b = cond.get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
     dx = curr_state[0]-mission_waypoint[a][0]
     dy = curr_state[1]-mission_waypoint[a][1]
     
@@ -238,7 +215,7 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     y_ = []
     yaw_ = []
     curv_ = []
-    a,b = get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
+    a,b = cond.get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
     dx = curr_state[0]-mission_waypoint[a][0]
     dy = curr_state[1]-mission_waypoint[a][1]
     
@@ -558,11 +535,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
             x, z = cond.occupancy_grid(obstacle,pred_time)
             x_ = x_+x
             z_ = z_+z
-            
-        # Ini rumus buat transformasi objek ketika vehicle mengahadap serong
-        # xx = z[i]*(np.sec(curr_state[2])-np.tan(curr_state[2])*np.sin(curr_state[2])) + x[i]*np.sin(curr_state[2])
-        # yy = z[i]*np.sin(curr_state[2])-x[i]*np.cos(curr_state[2])
-            
+
         # Collision Check
         coll = cc.collision_check([path_generated[0][bp]], obj_)
         print("Vehicle is switching lane, no collision detected")

@@ -39,21 +39,25 @@ def animate(i):
         obstacles = cond.obstacles_classifier()
         obj_ = []
         x_ = []
-        z_ = []
+        y_ = []
+        idx = cond.get_start_and_lookahead_index(waypoint,curr_state[0],curr_state[1],0)
+        yaw = curr_state[2]-waypoint[idx[0]][2]
         for obstacle in obstacles:
-            x, z = cond.occupancy_grid(obstacle,1)
+            x, y = cond.occupancy_grid(obstacle,1)
             x_ = x_+x
-            z_ = z_+z
-        for i in range (len(x_)):
-            obj_.append([x_[i],z_[i]])
-        obj_ = np.array(obj_)
+            y_ = y_+y
+        x_ = np.array(x_)
+        y_ = np.array(y_)
+        
+        x_ = x_*np.cos(-yaw)-y_*np.sin(-yaw)
+        y_ = x_*np.sin(-yaw)+y_*np.cos(-yaw)
     
         ax1.cla()
         
         ax1.plot(mission_waypoint[:,0],mission_waypoint[:,1], color='black')
         ax1.plot(curr_state[0],curr_state[1],'ro')
         ax1.plot(waypoint[:,0], waypoint[:,1], color='blue',ls="--")
-        ax1.scatter(x_, z_, label="Objject",color='black')
+        ax1.scatter(x_, y_, label="Objject",color='black')
         ax1.set_xlabel('x (m)')
         ax1.set_ylabel('y (m)')
         ax1.set_title('Trajectory')
