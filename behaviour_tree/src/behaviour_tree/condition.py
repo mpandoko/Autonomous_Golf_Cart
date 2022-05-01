@@ -72,11 +72,11 @@ def planner_callback(planner_msg):
     wp_planner['v'] = planner_msg.v
     wp_planner['curv'] = planner_msg.curv
 
-def mission_waypoint(mtype='real',file='lurus_ica_2.npy'):
+def mission_waypoint(mtype='simulation',file='lurus_ica_2.npy'):
     if (mtype=='real'):
         mission_waypoint = np.load(os.path.abspath(__file__+'/../waypoints/'+file))
     elif (mtype=='simulation'):
-        mission_waypoint = np.array(waypoints_dummies().turn_left())
+        mission_waypoint = np.array(waypoints_dummies().straight())
     return mission_waypoint
     
 
@@ -85,6 +85,7 @@ def waypoint():
     Return updated waypoint from published waypoints
     """
     global wp_planner
+    rospy.Subscriber('/wp_planner', Planner, planner_callback)
     
     curr_waypoint = []
     if (wp_planner['wp_type']==None):
@@ -96,6 +97,8 @@ def waypoint():
 
 def pose():
     global local_state
+    rospy.Subscriber('/ukf_states', ukf_states, state_callback)
+    
     global RUN
     wp = mission_waypoint(mtype='simulation')
     
@@ -111,8 +114,8 @@ def pose():
     
     # Step 1: Yaw disamakan dalam UTM, dalam kasus ini, Waypoints dianggap sudah UTM
     curr_state = [local_state['x'], local_state['y'], local_state['yaw']-(first_yaw-wp[0][2]), local_state['v']]
-    print("current_local state = ", curr_state)
-    RUN = False
+    print("current vehicle state: x = %.2f, y = %.2f, yaw = %.4f rad, v = %.2f m/s" %(curr_state[0],curr_state[1],curr_state[2],curr_state[3]))
+    RUN = True
     return curr_state
 
 #Mereturn jarak kendaraan saat ini dengan titik tujuan
@@ -134,8 +137,12 @@ def d_rem(curr_state,waypoint):
 
 #Memisahkan data object points untuk setiap object
 def obstacles_classifier():
+    # # Uncoment kalau real
     # global obj
-    obj = obstacle().free()
+    # rospy.Subscriber('/object_points', obj_points, perception_callback)
+    
+    # Uncoment kalau simulasi
+    obj = obstacle().fast()
     
     # print('x,z = (',obj['xc'],obj['zc'],')')
     # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
@@ -299,6 +306,7 @@ def possible_path(curr_state,mission_waypoints, pred_time):
             False
 
 
+# rospy.init_node('condition', anonymous=True)
 # Set callback data and variables
 # Setup dibawah karena agar tidak dipanggil fungsi diatasnya
 wp_planner = {
@@ -325,10 +333,6 @@ local_state = {
     'yaw':0.,
     'v':0.,
 }
-
-rospy.Subscriber('/object_points', obj_points, perception_callback)
-rospy.Subscriber('/ukf_states', ukf_states, state_callback)
-
 
 def condition():
     # In ROS, nodes are uniquely named. If two nodes with the same

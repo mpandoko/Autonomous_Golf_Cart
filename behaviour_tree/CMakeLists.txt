@@ -166,6 +166,7 @@ catkin_install_python(PROGRAMS
   src/behaviour_tree/condition.py
   src/behaviour_tree/actions.py
   src/behaviour_tree/dummies.py
+  src/behaviour_tree/live_plot.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

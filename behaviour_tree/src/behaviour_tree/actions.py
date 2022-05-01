@@ -11,7 +11,6 @@ which the output is publishing waypoints
 in rostopic : '/wp_planner'
 """
 
-from tkinter import W
 import numpy as np
 import rospy
 from math import sin, cos
@@ -23,7 +22,7 @@ from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
 from behaviour_tree.local_planner.spiral_generator import SpiralGenerator
 import behaviour_tree.condition as cond
 
-rospy.init_node('local_planner')
+# rospy.init_node('action')
 
 def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
     min_idx       = 0
@@ -70,12 +69,12 @@ def transform_paths(path, curv, ego_state):
         
     return transformed_path
 
-
 def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
-    freq = rospy.get_param('~freq', 5.) # Hz
+    freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    rate = rospy.Rate(freq) # Hz
     msg = Planner()
     msg.header.frame_id = 'local_planner'
     msg.header.seq = 0
@@ -187,10 +186,11 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     pub.publish(msg)
     
 def track_speed(curr_state, mission_waypoint, v_ts, a_max):
-    freq = rospy.get_param('~freq', 5.) # Hz
+    freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    rate = rospy.Rate(freq) # Hz
     msg = Planner()
     msg.header.frame_id = 'local_planner'
     msg.header.seq = 0
@@ -298,10 +298,11 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     pub.publish(msg)
     
 def decelerate_to_stop(curr_state, xf,yf,yawf, a_max):
-    freq = rospy.get_param('~freq', 5.) # Hz
+    freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    rate = rospy.Rate(freq) # Hz
     msg = Planner()
     msg.header.frame_id = 'local_planner'
     msg.header.seq = 0
@@ -383,7 +384,7 @@ def decelerate_to_stop(curr_state, xf,yf,yawf, a_max):
     pub.publish(msg)
 
 def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
-    freq = rospy.get_param('~freq', 5.) # Hz
+    freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     n_offset = rospy.get_param('~n_offset', 5) # m
     offset = rospy.get_param('~offset', 3) # m
@@ -399,7 +400,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     # Create publisher and subscriber
     # rospy.Subscriber('/ukf_states', ukf_states, state_callback)
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
-    # rate = rospy.Rate(freq) # Hz
+    rate = rospy.Rate(freq) # Hz
 
     # Wait until we get the actual state
     # print("Waiting for state estimation...")
@@ -529,7 +530,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     #     xwp.append(waypoints[i][0])
     #     ywp.append(waypoints[i][1])
     
-    import matplotlib.pyplot as plt
+    # import matplotlib.pyplot as plt
     # plt.subplot(1,2,1)
     # plt.plot(x,y,'ro')
     # # plt.plot(xwp,ywp,'go')
@@ -557,6 +558,10 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
             x, z = cond.occupancy_grid(obstacle,pred_time)
             x_ = x_+x
             z_ = z_+z
+            
+        # Ini rumus buat transformasi objek ketika vehicle mengahadap serong
+        # xx = z[i]*(np.sec(curr_state[2])-np.tan(curr_state[2])*np.sin(curr_state[2])) + x[i]*np.sin(curr_state[2])
+        # yy = z[i]*np.sin(curr_state[2])-x[i]*np.cos(curr_state[2])
             
         # Collision Check
         coll = cc.collision_check([path_generated[0][bp]], obj_)

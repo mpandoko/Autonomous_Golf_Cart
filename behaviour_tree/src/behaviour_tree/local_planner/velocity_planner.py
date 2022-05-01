@@ -71,7 +71,7 @@ class VelocityPlanner(object):
             
         for i in range(ramp_end_index+1, len(path[0])):
             # x, y flip
-            profile.append([path[1][i], path[0][i], path[2][i]-np.pi/2, desired_speed, path[3][i]])
+            profile.append([path[0][i], path[1][i], path[2][i], desired_speed, path[3][i]])
         
         return profile
             

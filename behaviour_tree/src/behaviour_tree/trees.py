@@ -88,7 +88,7 @@ def create_root():
     a_maxx = rospy.get_param('~a_max', 0.01) # m/s^2
     prediction_time = rospy.get_param('~pred_time', 2) #s
     v_trackspeed = rospy.get_param('~v_trackspeed', 1) #s
-    mission_type = rospy.get_param('~waypoint_mission','real')
+    mission_type = rospy.get_param('~waypoint_mission','simulation')
     mission = cond.mission_waypoint(mtype=mission_type)
     
     
@@ -181,6 +181,7 @@ def main():
     args = command_line_argument_parser().parse_args()
     print(description())
     py_trees.logging.level = py_trees.logging.Level.DEBUG
+    rospy.init_node('behaviour_tree', anonymous=True)
 
     root = create_root()
 
