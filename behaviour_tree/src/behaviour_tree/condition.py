@@ -25,10 +25,7 @@ subscribing and processong the data needed for behaviour trees processes
 # Imports
 ##############################################################################
 
-from calendar import c
 import os
-
-from matplotlib.pyplot import get
 import rospy
 import numpy as np
 
@@ -43,7 +40,7 @@ from behaviour_tree.msg import Planner, ukf_states
 
 from behaviour_tree.dummies import obstacle,waypoints_dummies
 
-RUN = False
+RUN = False\
 
 def state_callback(msg_nav):
     global local_state
@@ -88,7 +85,6 @@ def waypoint():
     Return updated waypoint from published waypoints
     """
     global wp_planner
-    rospy.Subscriber('/wp_planner', Planner, planner_callback)
     
     curr_waypoint = []
     if (wp_planner['wp_type']==None):
@@ -100,9 +96,10 @@ def waypoint():
     return curr_waypoint
 
 def pose():
+    """
+    Return updated state estimation of vehicle from published waypoints
+    """
     global local_state
-    rospy.Subscriber('/ukf_states', ukf_states, state_callback)
-    
     global RUN
     wp = mission_waypoint(mtype='simulation')
     
@@ -122,30 +119,13 @@ def pose():
     RUN = True
     return curr_state
 
-#Mereturn jarak kendaraan saat ini dengan titik tujuan
-def d_rem(curr_state,mission_waypoint):
-    #State mobil sekarang
-    x1 = curr_state[0]
-    y1 = curr_state[1]
-    
-    #Titik akhir tujuan
-    x2 = mission_waypoint[-1][0]
-    y2 = mission_waypoint[-1][1]
-
-    # print('x1x2y1y2 = ')
-    # print(x1,x2,y1,y2)
-
-    d_remain = np.sqrt((x2-x1)**2+(y2-y1)**2) #meter
-    return d_remain
-
 #Memisahkan data object points untuk setiap object
 def obstacles_classifier():
     # # Uncoment kalau real
-    # global obj
-    # rospy.Subscriber('/object_points', obj_points, perception_callback)
+    global obj
     
     # Uncoment kalau simulasi
-    obj = obstacle().fast()
+    obj = obstacle().slow()
     
     # print('x,z = (',obj['xc'],obj['zc'],')')
     # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
@@ -168,6 +148,22 @@ def obstacles_classifier():
         a = b
     
     return obs
+
+#Mereturn jarak kendaraan saat ini dengan titik tujuan
+def d_rem(curr_state,mission_waypoint):
+    #State mobil sekarang
+    x1 = curr_state[0]
+    y1 = curr_state[1]
+    
+    #Titik akhir tujuan
+    x2 = mission_waypoint[-1][0]
+    y2 = mission_waypoint[-1][1]
+
+    # print('x1x2y1y2 = ')
+    # print(x1,x2,y1,y2)
+
+    d_remain = np.sqrt((x2-x1)**2+(y2-y1)**2) #meter
+    return d_remain
 
 # Memeriksa apakah ada objek. dimana:
 # - waypoint = [x,y,yaw,curve,v]
@@ -201,7 +197,6 @@ def leader_selection(curr_state,waypoint):
     for obstacle in obstacles:
         # Assign object points to array
         objs_ = occupancy_grid(obstacle,0)
-        print('objs::::',len(objs_))
         obj_ = []
         for i in range (len(objs_[0])):
             obj_.append([objs_[0][i],objs_[1][i]])
@@ -346,6 +341,7 @@ def possible_path(curr_state,mission_waypoints, pred_time):
 # rospy.init_node('condition', anonymous=True)
 # Set callback data and variables
 # Setup dibawah karena agar tidak dipanggil fungsi diatasnya
+
 wp_planner = {
     'wp_type': None,
     'x': [],
@@ -370,6 +366,10 @@ local_state = {
     'yaw':0.,
     'v':0.,
 }
+# rospy.init_node('behaviour_tree', anonymous=True)
+rospy.Subscriber('/ukf_states', ukf_states, state_callback)
+rospy.Subscriber('/wp_planner', Planner, planner_callback)
+rospy.Subscriber('/object_points', obj_points, perception_callback)
 
 def condition():
     # In ROS, nodes are uniquely named. If two nodes with the same
