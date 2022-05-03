@@ -162,7 +162,7 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     # # Publish the message
     pub.publish(msg)
     
-def track_speed(curr_state, mission_waypoint, v_ts, a_max):
+def track_speed(curr_state, mission_waypoint, a_max, v_ts):
     freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
@@ -183,6 +183,8 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     
     print("Planning velocity...")
     v_cmd = v_ts
+    print("v_ts")
+    print(v_ts)
 
     x=[]
     y=[]
@@ -245,7 +247,8 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     msg.yaw = yaw
     msg.v = v
     msg.curv = curv
-    
+    print("v")
+    print(v)
     # # Plot for debuging
     # idx = [i for i in range(len(v))]
     
@@ -524,6 +527,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     # plt.show()
     
     # Publish the message
+    print(x)
     pub.publish(msg)
 
     while(True):
@@ -542,4 +546,4 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
         if not coll:
             print("STATUS: Collision detected, switching lane end")
             break
-        print("STATUS: Vehicle has successfully switched lane")
+    print("STATUS: Vehicle has successfully switched lane")
