@@ -61,7 +61,7 @@ class IsLeaderExist(py_trees.behaviour.Behaviour):
         leader = cond.is_leader_ex(self.curr_state,self.waypoint)
         if leader:
             self.feedback_message = "Obstacle in front of us"
-            print("Oh no, there is leader in front of us")
+            print("Leader in front of us")
             return py_trees.common.Status.SUCCESS
         else:
             return py_trees.common.Status.FAILURE
@@ -84,13 +84,14 @@ class IsLeaderFast(py_trees.behaviour.Behaviour):
         
         #Checking is leader velocity in front of vehicle
         v_leader = cond.leader_velocity(self.curr_state,self.waypoint)
+        print('with, v:' ,v_leader)
         if (v_leader>self.v_threshold):
-            self.feedback_message = "but it is fast"
-            print("but it is fast")
+            self.feedback_message = "it is fast"
+            print("it is fast")
             return py_trees.common.Status.SUCCESS
         else:
-            self.feedback_message = "The leader is too slow!"
-            print("The leader is too slow!")
+            self.feedback_message = "TIt is too slow!"
+            print("It is too slow!")
             return py_trees.common.Status.FAILURE
     
     def terminate(self, new_status):
@@ -146,7 +147,7 @@ class TrackSpeed(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #the track speed code
-        act.track_speed(self.curr_state, self.mission_waypoint, self.a_max, self.v_ts)
+        act.track_speed(self.curr_state, self.mission_waypoint, self.v_ts, self.a_max)
         
         print("STATUS: Vehicle runs in constant velocity")
         print("================== Tick ends, to the next run =====================")

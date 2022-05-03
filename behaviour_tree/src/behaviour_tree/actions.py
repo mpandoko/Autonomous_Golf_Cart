@@ -158,7 +158,6 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     # plt.xlabel('i')
     # plt.ylabel('v')
     # plt.show()
-    
     # # Publish the message
     pub.publish(msg)
     
@@ -246,6 +245,7 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     msg.v = v
     msg.curv = curv
     
+    axx = cond.waypoint()
     # # Plot for debuging
     # idx = [i for i in range(len(v))]
     
@@ -376,8 +376,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     
     # Create publisher and subscriber
     # rospy.Subscriber('/ukf_states', ukf_states, state_callback)
-    pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
-    rate = rospy.Rate(freq) # Hz
+    # Hz
 
     # Wait until we get the actual state
     # print("Waiting for state estimation...")
@@ -522,11 +521,12 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     # plt.xlabel('i')
     # plt.ylabel('v')
     # plt.show()
-    
     # Publish the message
-    pub.publish(msg)
-
     while(True):
+        # print(msg)
+        pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+        rate = rospy.Rate(freq) 
+        pub.publish(msg)
         obstacles = cond.obstacles_classifier()
         obj_ = []
         x_ = []
@@ -537,9 +537,15 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
             z_ = z_+z
 
         # Collision Check
+        # return true if free collision
+        # return false if collision
         coll = cc.collision_check([path_generated[0][bp]], obj_)
-        print("Vehicle is switching lane, no collision detected")
+        distance = cond.d_rem(cond.pose(), cond.waypoint())
+        # print('panjang waypointtt::  ',len(cond.waypoint()))
         if not coll:
             print("STATUS: Collision detected, switching lane end")
             break
-        print("STATUS: Vehicle has successfully switched lane")
+        elif (distance<=0.1):
+            print("STATUS: Vehicle has successfully switched lane")
+            break
+        print("Vehicle is switching lane, no collision detected")

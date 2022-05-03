@@ -183,7 +183,7 @@ def main():
     args = command_line_argument_parser().parse_args()
     print(description())
     py_trees.logging.level = py_trees.logging.Level.DEBUG
-    rospy.init_node('behaviour_tree', anonymous=True)
+    rospy.init_node('local_planner', anonymous=True)
 
     root = create_root()
 
