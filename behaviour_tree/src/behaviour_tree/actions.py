@@ -161,7 +161,7 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     # # Publish the message
     pub.publish(msg)
     
-def track_speed(curr_state, mission_waypoint, v_ts, a_max):
+def track_speed(curr_state, mission_waypoint, a_max, v_ts):
     freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
