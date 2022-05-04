@@ -72,6 +72,8 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     l_veh = 2.4
     d_des = max(l_veh*curr_state[3]/5, d_min)
     d_act = cond.leader_distance(curr_state,waypoint)
+    if d_act==None:
+        return False
     v_cmd = Kgap*(d_act - d_des)
     
     x=[]
@@ -160,6 +162,7 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     # plt.show()
     # # Publish the message
     pub.publish(msg)
+    return True
     
 def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     freq = rospy.get_param('~freq', 10) # Hz

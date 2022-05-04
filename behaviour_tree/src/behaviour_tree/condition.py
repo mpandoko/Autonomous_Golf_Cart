@@ -227,13 +227,17 @@ def is_leader_ex(curr_state,waypoint):
     
 def leader_velocity(curr_state,waypoint):
     waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
-    vzc = leader_selection(curr_state,waypoint)[1][0]
-    return vzc
+    vzc = leader_selection(curr_state,waypoint)[1]
+    if vzc==[]:
+        return None
+    return vzc[0]
 
 def leader_distance(curr_state,waypoint):
     waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
-    zc = leader_selection(curr_state,waypoint)[2][0]
-    return zc
+    zc = leader_selection(curr_state,waypoint)[2]
+    if zc==[]:
+        return None
+    return zc[0]
 
 def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
     min_idx       = 0
@@ -271,12 +275,20 @@ def occupancy_grid(obstacle, pred_time):
     vx_ = obstacle['vzc']
     vy_ = obstacle['vxc']
 
+    # # Real
+    # for i in range (len(obstacle['obj_x'])):
+    #     x = obstacle['obj_z'][i]
+    #     y = obstacle['obj_x'][i]
+    #     x_.append(x*np.cos(yaw)-y*np.sin(yaw))
+    #     y_.append(x*np.sin(yaw)+y*np.cos(yaw))
+    
+    # Simulasi
     for i in range (len(obstacle['obj_x'])):
         x = obstacle['obj_z'][i]
         y = obstacle['obj_x'][i]
-        x_.append(x*np.cos(-yaw)-y*np.sin(-yaw))
-        y_.append(x*np.sin(-yaw)+y*np.cos(-yaw))
-
+        x_.append(x)
+        y_.append(y)
+    
     for i in range(pred_time-1):
         for j in range(len(x_)):
             x_.append(x_[j] + vx_*(i+1))
