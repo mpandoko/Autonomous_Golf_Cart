@@ -10,6 +10,7 @@ The class states which called by trees.py
 and execute the function of the state.
 """
 
+from unicodedata import east_asian_width
 import behaviour_tree.condition as cond
 import behaviour_tree.actions as act
 import py_trees
@@ -85,7 +86,11 @@ class IsLeaderFast(py_trees.behaviour.Behaviour):
         #Checking is leader velocity in front of vehicle
         v_leader = cond.leader_velocity(self.curr_state,self.waypoint)
         print('with, v:' ,v_leader)
-        if (v_leader>self.v_threshold):
+        if v_leader==None:
+            print('STATUS: Leader suddenly dissapears')
+            print("================== Tick ends, to the next run =====================")
+            return py_trees.common.Status.RUNNING
+        elif (v_leader>self.v_threshold):
             self.feedback_message = "it is fast"
             print("it is fast")
             return py_trees.common.Status.SUCCESS
@@ -195,8 +200,10 @@ class FollowLeader(py_trees.behaviour.Behaviour):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         
         #the follow leader code
-        act.follow_leader(self.curr_state, self.mission_waypoint, self.waypoint, self.a_max)
-        
+        success = act.follow_leader(self.curr_state, self.mission_waypoint, self.waypoint, self.a_max)
+        if not success:
+            print('STATUS: Leader suddenly dissapears')
+            print("================== Tick ends, to the next run =====================")
         print("STATUS: Vehicle follows the leader!")
         print("================== Tick ends, to the next run =====================")
         return py_trees.common.Status.SUCCESS

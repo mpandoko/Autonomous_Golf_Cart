@@ -42,8 +42,8 @@ def animate(i):
             y_ = y_+y
         x_ = np.array(x_)
         y_ = np.array(y_)
-        x_ = x_*np.cos(-yaw)-y_*np.sin(-yaw) + curr_state[0]
-        y_ = x_*np.sin(-yaw)+y_*np.cos(-yaw) + curr_state[1]
+        x_ = x_ + curr_state[0]
+        y_ = y_ + curr_state[1]
         x = []
         y = []
         for i in range (len(waypoint)):
