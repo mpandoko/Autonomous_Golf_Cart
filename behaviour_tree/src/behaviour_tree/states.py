@@ -150,7 +150,9 @@ class TrackSpeed(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.curr_state = cond.pose()
+        print("curr state states")
+        print(self.curr_state)
         #the track speed code
         act.track_speed(self.curr_state, self.mission_waypoint, self.v_ts, self.a_max)
         

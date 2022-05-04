@@ -10,6 +10,7 @@ from math import atan2
 from pkg_ta.msg import Control
 from std_msgs.msg import Float32
 from pkg_ta.msg import ukf_states
+from behaviour_tree.msg import Planner
 
 import behaviour_tree.condition as cond
 
@@ -29,6 +30,8 @@ rospy.init_node('control')
 
 # The actual state
 state = {'x': 0., 'y': 0., 'yaw': 0., 'v': 0.}
+planner = {'wp_type': 0, 'x': [0., 0.], 'y': [0., 0.], 'yaw': [0., 0.],
+           'v': [0., 0.], 'curv': [0., 0.]}
 RUN = False
 
 def wrap_angle(angle):
@@ -48,6 +51,16 @@ def callback(msg_nav):
     state['yaw'] = msg_nav.yaw_est if (state['v'] < 0.4) else wrap_angle(msg_nav.yaw_dydx - np.pi/2)
 
     RUN = True
+
+def planner_callback(planner_msg):
+    global planner
+    
+    planner['wp_type'] = planner_msg.wp_type
+    planner['x'] = planner_msg.x
+    planner['y'] = planner_msg.y
+    planner['yaw'] = planner_msg.yaw
+    planner['v'] = planner_msg.v
+    planner['curv'] = planner_msg.curv
 
 freq = rospy.get_param('~freq', 20.) # Hz
 ff_1 = rospy.get_param('~ff_1', 0.0)
@@ -85,6 +98,7 @@ controller = Controller(kp, ki, kd, feed_forward_params, sat_long,\
                         max_throttle_move, min_throttle_move, kv_yaw, kv_lat)
 
 rospy.Subscriber('/ukf_states', ukf_states, callback)
+rospy.Subscriber('/wp_planner', Planner, planner_callback)
 pub = rospy.Publisher('/control_signal', Control, queue_size=1)
 lyap_pub = rospy.Publisher('/lyap_gain', Float32, queue_size=1)
 rate = rospy.Rate(freq) # Hz
@@ -112,6 +126,26 @@ while not rospy.is_shutdown():
     msg.header.stamp = rospy.Time.now()
     delta_t = msg.header.stamp.to_sec() - last_time
     last_time = msg.header.stamp.to_sec()
+
+    ### Local Planner
+    # Global waypoints
+    if planner['wp_type'] == 0:
+        # Update waypoints
+        controller.update_waypoints(waypoints)
+    
+    # Local waypoints
+    elif planner['wp_type'] == 1:
+        best_wp = []
+        print("local_waypoints")
+        
+        # Change message to waypoints format
+        ## [x, y, yaw, v, curv]
+        for i in range(len(planner['x'])):
+            best_wp.append([planner['x'][i], planner['y'][i], planner['yaw'][i],
+                           planner['v'][i], planner['curv'][i]])
+        print(np.array(best_wp))
+        # Update waypoints
+        controller.update_waypoints(np.array(best_wp))
 
     ### Calculate the control signal
     long, lat, lyap_gain = controller.calculate_control_signal(delta_t, state['x'],

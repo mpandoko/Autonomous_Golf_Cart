@@ -161,10 +161,14 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     # plt.ylabel('v')
     # plt.show()
     # # Publish the message
+    print("wp follow leader")
+    print(msg)
     pub.publish(msg)
     return True
     
 def track_speed(curr_state, mission_waypoint, v_ts, a_max):
+    print("curr state action")
+    print(curr_state)
     freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     
@@ -220,7 +224,10 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     a,b = cond.get_start_and_lookahead_index(mission_waypoint, curr_state[0],curr_state[1], ld_dist)
     dx = curr_state[0]-mission_waypoint[a][0]
     dy = curr_state[1]-mission_waypoint[a][1]
-    
+    # print("a,b")
+    # print(a)
+    # print(b)
+    # print(curr_state)
     for i in range (a,b):
         x_.append(mission_waypoint[i][0]+dx)
         y_.append(mission_waypoint[i][1]+dy)
@@ -228,6 +235,8 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
         curv_.append(mission_waypoint[i][4])
     path = [x_,y_,yaw_,curv_]
     wp = vp.nominal_profile(path,curr_state[3],v_cmd)
+    # print("wp trackspeed")
+    # print(wp)
     
     for i in range(len(wp)):
         x.append(wp[i][0])
@@ -273,6 +282,8 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     # plt.xlabel('i')
     # plt.ylabel('v')
     # plt.show()
+    # print("x trackspeed")
+    # print(x)
     
     # Publish the message
     pub.publish(msg)
@@ -361,6 +372,8 @@ def decelerate_to_stop(curr_state, xf,yf,yawf, a_max):
     # plt.show()
     
     # Publish the message
+    print("wp decelerate")
+    print(msg)
     pub.publish(msg)
 
 def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
@@ -452,7 +465,8 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     coll = cc.collision_check(path_generated[0], obj_)
     print('select:',coll)
     bp = cc.path_selection(path_generated[0], coll, g_set[n_offset//2])
-    
+    if bp == None:
+        return None
     # Declare variables
     x = []
     y = []
@@ -529,6 +543,8 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
         # print(msg)
         pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
         rate = rospy.Rate(freq) 
+        print("wp trackspeed")
+        print(msg) 
         pub.publish(msg)
         obstacles = cond.obstacles_classifier()
         obj_ = []
