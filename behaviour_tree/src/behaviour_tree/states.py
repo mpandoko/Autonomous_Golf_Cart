@@ -32,6 +32,7 @@ class IsArrive(py_trees.behaviour.Behaviour):
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         #Checking remaining distance of arrival point
+        self.curr_state = cond.pose()
         d_remain = cond.d_rem(self.curr_state, self.mission_waypoint)
         print("is vehicle almost arrive?")
         if (d_remain<=10):
@@ -57,7 +58,8 @@ class IsLeaderExist(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.waypoint = cond.waypoint()
+        self.curr_state = cond.pose()
         #Checking is there a leader in front of vehicle
         leader = cond.is_leader_ex(self.curr_state,self.waypoint)
         if leader:
@@ -82,7 +84,8 @@ class IsLeaderFast(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.waypoint = cond.waypoint()
+        self.curr_state = cond.pose()
         #Checking is leader velocity in front of vehicle
         v_leader = cond.leader_velocity(self.curr_state,self.waypoint)
         print('with, v:' ,v_leader)
@@ -115,7 +118,7 @@ class PossiblePath(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.curr_state = cond.pose()
         #Checking is leader velocity in front of vehicle
         possible_path = cond.possible_path(self.curr_state, self.mission_waypoint, self.pred_time)
         if possible_path:
@@ -200,7 +203,8 @@ class FollowLeader(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.waypoint = cond.waypoint()
+        self.curr_state = cond.pose()
         #the follow leader code
         success = act.follow_leader(self.curr_state, self.mission_waypoint, self.waypoint, self.a_max)
         if not success:
@@ -229,7 +233,8 @@ class SwitchLane(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.waypoint = cond.waypoint()
+        self.curr_state = cond.pose()
         #the switch lane code
         act.switch_lane(self.curr_state, self.mission_waypoint, self.pred_time, self.a_max)
         print("================== Tick ends, to the next run =====================")
@@ -253,7 +258,8 @@ class DecelerateToStop(py_trees.behaviour.Behaviour):
     
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
-        
+        self.waypoint = cond.waypoint()
+        self.curr_state = cond.pose()
         #the decelerate to stop code
         act.decelerate_to_stop(
             self.curr_state,

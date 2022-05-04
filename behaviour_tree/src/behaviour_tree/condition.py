@@ -121,11 +121,11 @@ def pose():
 
 #Memisahkan data object points untuk setiap object
 def obstacles_classifier():
-    # # Uncoment kalau real
+    # # Uncoment kalau object real
     global obj
     
-    # Uncoment kalau simulasi
-    obj = obstacle().slow()
+    # Uncoment kalau dummies
+    # obj = obstacle().fast()
     
     # print('x,z = (',obj['xc'],obj['zc'],')')
     # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
@@ -218,7 +218,6 @@ def leader_selection(curr_state,waypoint):
     return [obj_coll_id, obc_coll_vzc, obj_coll_zc]
 
 def is_leader_ex(curr_state,waypoint):
-    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     id = leader_selection(curr_state,waypoint)[0]
     if (len(id)):
         return True
@@ -226,14 +225,12 @@ def is_leader_ex(curr_state,waypoint):
         return False
     
 def leader_velocity(curr_state,waypoint):
-    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     vzc = leader_selection(curr_state,waypoint)[1]
     if vzc==[]:
         return None
     return vzc[0]
 
 def leader_distance(curr_state,waypoint):
-    waypoint = waypoint-[waypoint[0][0],waypoint[0][1],0,0,0]
     zc = leader_selection(curr_state,waypoint)[2]
     if zc==[]:
         return None
