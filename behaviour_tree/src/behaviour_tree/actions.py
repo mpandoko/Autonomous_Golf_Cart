@@ -161,8 +161,6 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     # plt.ylabel('v')
     # plt.show()
     # # Publish the message
-    print("wp follow leader")
-    print(msg)
     pub.publish(msg)
     return True
     
@@ -372,8 +370,6 @@ def decelerate_to_stop(curr_state, xf,yf,yawf, a_max):
     # plt.show()
     
     # Publish the message
-    print("wp decelerate")
-    print(msg)
     pub.publish(msg)
 
 def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
@@ -482,7 +478,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     
     # Generate waypoints with speed and curvature
     # Format [x, y, t, v, curv]
-    best_wp = vp.nominal_profile(tf_paths[bp], curr_state[-1], g_set[bp][-1])
+    best_wp = vp.nominal_profile(tf_paths[bp], g_set[bp][-1], g_set[bp][-1])
     # print("wp_generated: ",best_wp)
 
     # Add starting waypoints
@@ -540,11 +536,8 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     # plt.show()
     # Publish the message
     while(True):
-        # print(msg)
         pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
         rate = rospy.Rate(freq) 
-        print("wp trackspeed")
-        print(msg) 
         pub.publish(msg)
         obstacles = cond.obstacles_classifier()
         obj_ = []
@@ -554,6 +547,9 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
             x, z = cond.occupancy_grid(obstacle,pred_time)
             x_ = x_+x
             z_ = z_+z
+        for i in range (len(x_)):
+            obj_.append([x_[i],z_[i]])
+        obj_ = np.array(obj_)  
 
         # Collision Check
         # return true if free collision
@@ -561,7 +557,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
         coll = cc.collision_check([path_generated[0][bp]], obj_)
         distance = cond.d_rem(cond.pose(), cond.waypoint())
         # print('panjang waypointtt::  ',len(cond.waypoint()))
-        if not coll:
+        if not coll[0]:
             print("STATUS: Collision detected, switching lane end")
             break
         elif (distance<=0.1):
