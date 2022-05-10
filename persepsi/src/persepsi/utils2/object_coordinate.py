@@ -26,13 +26,13 @@ def pixel_to_point(det, color_intrin):
     return det
 
 def point_to_pixel(det, color_intrin):
-    xy = rs.rs2_project_point_to_pixel(color_intrin, det[:3])
+    xy = rs.rs2_project_point_to_pixel(color_intrin, [det[0], det[1], det[4]])
     det[:2] = xy
     return det
 
 def track_point_to_pixel(det, color_intrin):
-    ret = det.mean[:4].copy()
-    xy = rs.rs2_project_point_to_pixel(color_intrin, ret[:3])
+    ret = det.mean[:5].copy()
+    xy = rs.rs2_project_point_to_pixel(color_intrin, [ret[0], ret[1], ret[4]])
     ret[:2] = xy
     ret[2] *= ret[3]
     ret[:2] -= ret[2:4] / 2

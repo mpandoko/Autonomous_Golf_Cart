@@ -311,10 +311,10 @@ def occupancy_grid(obstacle, pred_time):
 # The output is either True or None
 def possible_path(curr_state,mission_waypoints, pred_time):
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
-    n_offset = rospy.get_param('~n_offset', 5) # m
-    offset = rospy.get_param('~offset', 3) # m
-    c_location = rospy.get_param('~c_location', [-1, 1, 3]) # m
-    c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
+    n_offset = rospy.get_param('~n_offset', 9) # m
+    offset = rospy.get_param('~offset', 0.5) # m
+    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
+    c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     
     # waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]

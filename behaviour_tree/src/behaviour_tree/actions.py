@@ -292,10 +292,10 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
 def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
-    n_offset = rospy.get_param('~n_offset', 5) # m
-    offset = rospy.get_param('~offset', 3) # m
-    c_location = rospy.get_param('~c_location', [-1, 1, 3]) # m
-    c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
+    n_offset = rospy.get_param('~n_offset', 9) # m
+    offset = rospy.get_param('~offset', 0.5) # m
+    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
+    c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     
     # Create local planner classes
@@ -395,7 +395,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     
     # Generate waypoints with speed and curvature
     # Format [x, y, t, v, curv]
-    best_wp = vp.nominal_profile(tf_paths[bp], curr_state[-1], g_set[bp][-1])
+    best_wp = vp.nominal_profile(tf_paths[bp], g_set[bp][-1], g_set[bp][-1])
     # print("wp_generated: ",best_wp)
 
     # Add starting waypoints
@@ -467,17 +467,21 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
             x, z = cond.occupancy_grid(obstacle,pred_time)
             x_+=x
             z_+=z
-
+        for i in range (len(x_)):
+            obj_.append([x_[i],z_[i]])
+        obj_ = np.array(obj_)  
         # Collision Check
         # return true if free collision
         # return false if collision
         coll = cc.collision_check([path_generated[0][bp]], obj_)
         distance = cond.d_rem(cond.pose(), cond.waypoint())
+        print("distance")
+        print(distance)
         # print('panjang waypointtt::  ',len(cond.waypoint()))
-        if not coll:
+        if not coll[0]:
             print("STATUS: Collision detected, switching lane end")
             break
-        elif (distance<=0.1):
+        elif (distance<=0.25):
             print("STATUS: Vehicle has successfully switched lane")
             break
         print("Vehicle is switching lane, no collision detected")

@@ -134,16 +134,16 @@ while not rospy.is_shutdown():
         controller.update_waypoints(waypoints)
     
     # Local waypoints
-    elif planner['wp_type'] == 1:
+    elif (planner['wp_type']) :
         best_wp = []
-        print("local_waypoints")
+        # print("local_waypoints")
         
         # Change message to waypoints format
         ## [x, y, yaw, v, curv]
         for i in range(len(planner['x'])):
             best_wp.append([planner['x'][i], planner['y'][i], planner['yaw'][i],
                            planner['v'][i], planner['curv'][i]])
-        print(np.array(best_wp))
+        # print(np.array(best_wp))
         # Update waypoints
         controller.update_waypoints(np.array(best_wp))
 
@@ -160,13 +160,15 @@ while not rospy.is_shutdown():
     ### Send the message
     # Header
     msg.header.seq += 1
-    
+    print("lat")
+    print(lat)
     # Control action
     msg.action_steer = max(min(-1*np.rad2deg(lat), max_steer_arduino), min_steer_arduino) # lat ~ (rad)
     msg.action_throttle = max(min(long, max_throttle), min_throttle)
     #msg.action_brake = max(min(-long, max_brake), 0.)
     msg.action_brake = 0.
-    
+    print("steer")
+    print(msg.action_steer)
     # Error profile
     # msg.error_speed = err[0] # (m/s)
     # msg.error_lateral = err[1] # (m)

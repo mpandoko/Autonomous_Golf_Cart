@@ -141,7 +141,6 @@ def detect(opt):
     #txt_file_name = source.split('/')[-1].split('.')[0]
     txt_file_name = 'r'
     txt_path = os.path.abspath(__file__+"/../inference/output/" + txt_file_name + '.txt')
-    print(txt_path)
     time_start = time_sync()
 
     if pt and device.type != 'cpu':
@@ -209,7 +208,6 @@ def detect(opt):
                     t5 = time_sync()
                     dt[3] += t5 - t4
                     total_time = t5-time_start
-
 
                     # draw boxes for visualization
                     if len(outputs) > 0:
