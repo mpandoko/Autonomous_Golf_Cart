@@ -180,8 +180,6 @@ class Stop(py_trees.behaviour.Behaviour):
     def update(self):
         self.logger.debug("%s.update()" % self.__class__.__name__)
         #the stop code
-        act.stop()
-        
         print("STATUS; Vehicle is stop")
         print("================== Tick ends, to the next run =====================")
         return py_trees.common.Status.SUCCESS
