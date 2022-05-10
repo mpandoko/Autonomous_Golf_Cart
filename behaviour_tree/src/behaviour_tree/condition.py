@@ -95,6 +95,19 @@ def waypoint():
             np.array(curr_waypoint)
     return curr_waypoint
 
+def manuver_type():
+    global wp_planner
+    manuvers = [
+        'Global',
+        'Track Speed',
+        'Follow Leader',
+        'Switch Lane',
+        'Decelerate to Stop',
+        'Stop'
+    ]
+    manuver = manuvers[wp_planner['wp_type']]
+    return manuver
+
 def pose():
     """
     Return updated state estimation of vehicle from published waypoints
@@ -115,7 +128,7 @@ def pose():
     
     # Step 1: Yaw disamakan dalam UTM, dalam kasus ini, Waypoints dianggap sudah UTM
     curr_state = [local_state['x'], local_state['y'], local_state['yaw']-(first_yaw-wp[0][2]), local_state['v']]
-    print("current vehicle state: x = %.2f, y = %.2f, yaw = %.4f rad, v = %.2f m/s" %(curr_state[0],curr_state[1],curr_state[2],curr_state[3]))
+    # print("current vehicle state: x = %.2f, y = %.2f, yaw = %.4f rad, v = %.2f m/s" %(curr_state[0],curr_state[1],curr_state[2],curr_state[3]))
     RUN = True
     return curr_state
 
