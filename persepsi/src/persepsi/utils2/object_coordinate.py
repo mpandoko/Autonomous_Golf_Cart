@@ -18,6 +18,22 @@ def calcdepth(xywh, aligned_df):
     return torch.tensor(dist_array).cuda()
 
     #https://github.com/IntelRealSense/librealsense/issues/6749 this potentially is more accurate, try later
+    
+def calcdepth2(xyxy, verts):
+    dist_array = np.array([np.array([])])
+    for j in xyxy: #loop for all bboxes
+        x1 = int(j[0].item())
+        y1 = int(j[1].item())
+        x2 = int(j[2].item())
+        y2 = int(j[3].item())
+        object_points = verts[y1:y2, x1:x2].reshape(-1, 3)
+        # Get z points
+        if not object_points.size:
+            break
+        zs = object_points[:, 2]
+        dist = np.array([np.array([np.percentile(zs, 25)])])
+        dist_array = np.concatenate((dist_array, dist), axis=0) if dist_array.size else dist
+    return torch.tensor(dist_array).cuda()
 
 # Pixel to point
 def pixel_to_point(det, color_intrin):

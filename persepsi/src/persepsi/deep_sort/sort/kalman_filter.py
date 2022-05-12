@@ -228,7 +228,8 @@ class KalmanFilter(object):
         """
         mean, covariance = self.project(mean, covariance)
         measurements=np.array([np.array([])])
-        for measurement in measurementss:
+        measurementsss = measurementss.copy()
+        for measurement in measurementsss:
             ms = np.array([np.array(pixel_to_point(measurement, color_intrin))])
             measurements = np.concatenate((measurements, ms), axis=0) if measurements.size else ms
         if only_position:

@@ -196,7 +196,8 @@ def detect(opt):
                 xywhs = xyxy2xywh(det[:, 0:4])
                 confs = det[:, 4]
                 clss = det[:, 5]
-                z = calcdepth(xywhs, aligned_df)      
+                # z = calcdepth(xywhs, aligned_df) #get the depth of the center [x, y] pixel
+                z = calcdepth2(det[:, 0:4], verts) #get the 1st quartile of all pixel's depth readings in the bbox     
                 xywhzs = torch.cat((xywhs, z), 1)
                 xywhzs = xywhzs[xywhzs[:, 4] > 0.0] #delete all z = 0 readings
 
@@ -248,7 +249,9 @@ def detect(opt):
                             
                             # Get z percentile 40 (where most likely the object blob is, 
                             # think of it like medians but more likely to pick the foreground object instead of the background)
-                            z_ = np.percentile(zs, 40)
+                            z_ = np.percentile(zs, 25)
+                            print("z_")
+                            print(z_)
 
                             # Delete object points if less or greater than threshold
                             ## Threshold: z_ - 0.5 | z_ + 0.5
@@ -364,7 +367,7 @@ if __name__ == '__main__':
     parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
     parser.add_argument('--save-txt', default='true', help='save MOT compliant results to *.txt')
     # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 16 17')
+    parser.add_argument('--classes', nargs='+', type=int, default='0', help='filter by class: --class 0, or --class 16 17')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--evaluate', action='store_true', help='augmented inference')
