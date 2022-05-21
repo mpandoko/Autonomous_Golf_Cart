@@ -1,0 +1,142 @@
+0.2 Hz
+
+Tes 1
+MAE: 0.6807
+MSE: 1.0265
+RMSE: 1.0132
+Total Plan: 9
+Time: 38.0 s
+
+Tes 2
+MAE: 0.5202
+MSE: 0.4132
+RMSE: 0.6428
+Total Plan: 8
+Time: 36.0 s
+
+Tes 3
+MAE: 0.4455
+MSE: 0.3350
+RMSE: 0.5788
+Total Plan: 8
+Time: 37.1 s
+
+0.3 Hz
+
+Tes 1
+MAE: 0.9324
+MSE: 1.1359
+RMSE: 1.0658
+Total Plan: 10
+Time: 34.8 s
+
+Tes 2
+MAE: 0.8959
+MSE: 1.1276
+RMSE: 1.0619
+Total Plan: 11
+Time: 35.3 s
+
+Tes 3
+MAE: 0.3995
+MSE: 0.1935
+RMSE: 0.4399
+Total Plan: 11
+Time: 33.9 s
+
+0.5 Hz
+
+Tes 1
+MAE: 0.6286
+MSE: 0.4445
+RMSE: 0.6667
+Total Plan: 18
+Time: 37.5 s
+
+Tes 2
+MAE: 0.8736
+MSE: 0.8674
+RMSE: 0.9314
+Total Plan: 18
+Time: 35.9 s
+
+Tes 3
+MAE: 0.6338
+MSE: 0.4856
+RMSE: 0.6968
+Total Plan: 19
+Time: 37.8 s
+
+5 Hz
+
+Tes 1
+MAE: 1.7634
+MSE: 4.1286
+RMSE: 2.0319
+Total Plan: 108
+Time: DNF
+
+Tes 2
+MAE: 2.0371
+MSE: 5.9243
+RMSE: 2.4340
+Total Plan:128
+Time: DNF
+
+Tes 3
+MAE: 1.6551
+MSE: 4.3317
+RMSE: 2.0813
+Total Plan: 119
+Time: DNF
+
+0.2 Hz - Objek
+
+Tes 1
+Max Dev: 2.2993
+Total Plan: 4
+Time: DNF
+
+Tes 2
+Max Dev: 1.9125
+Total Plan: 4
+Time: DNF
+
+Tes 3
+Max Dev: 6.2946
+Total Plan: 6
+Time: DNF
+
+0.3 Hz - Objek
+
+Tes 1
+Max Dev: 2.0524
+Total Plan: 11
+Time: 35.1 s
+
+Tes 2
+Max Dev: 2.0722
+Total Plan: 10
+Time: 32.6 s
+
+Tes 3
+Max Dev: 1.9065
+Total Plan: 9
+Time: 30.3 s
+
+0.5 Hz - Objek
+
+Tes 1
+Max Dev: 2.0211
+Total Plan: 16
+Time: 32.5 s
+
+Tes 2
+Max Dev: 1.7489
+Total Plan: 17
+Time: 33.9 s
+
+Tes 3
+Max Dev: 1.9077
+Total Plan: 16
+Time: 32.1 s
