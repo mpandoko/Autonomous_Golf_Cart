@@ -1,0 +1,2 @@
+%time,field.groups0.name,field.groups0.type,field.groups0.parameters0.name,field.groups0.parameters0.type,field.groups0.parameters0.level,field.groups0.parameters0.description,field.groups0.parameters0.edit_method,field.groups0.parent,field.groups0.id,field.max.doubles0.name,field.max.doubles0.value,field.min.doubles0.name,field.min.doubles0.value,field.dflt.doubles0.name,field.dflt.doubles0.value
+1597380896796106535,Default,,yaw_calibration,double,0,Yaw Calibration,,0,0,yaw_calibration,10.0,yaw_calibration,-10.0,yaw_calibration,0.0

@@ -1,0 +1,14 @@
+<launch>
+
+  <node name="nmea_serial_driver_node" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen">
+    <param name="port" value="/dev/ttyACM0"/>
+    <param name="baud" value="4800" />
+    <param name="frame_id" value="gps" />
+    <param name="use_GNSS_time" value="False" />
+    <param name="time_ref_source" value="gps" />
+    <param name="useRMC" value="False" />
+  </node>
+
+<node name="utm" pkg="gps_common" type="utm_odometry_node" />
+
+</launch>

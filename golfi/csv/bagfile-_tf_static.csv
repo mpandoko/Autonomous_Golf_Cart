@@ -1,0 +1,7 @@
+%time,field.transforms0.header.seq,field.transforms0.header.stamp,field.transforms0.header.frame_id,field.transforms0.child_frame_id,field.transforms0.transform.translation.x,field.transforms0.transform.translation.y,field.transforms0.transform.translation.z,field.transforms0.transform.rotation.x,field.transforms0.transform.rotation.y,field.transforms0.transform.rotation.z,field.transforms0.transform.rotation.w
+1597380892600019308,0,1597380849797453839,odom,base_link,0.0,0.0,0.0,0.0,0.0,0.0,1.0
+1597380892602112593,0,1597380849747907830,map,odom,0.0,0.0,0.0,0.0,0.0,0.0,1.0
+1597380892603410913,0,1597380849816137230,base_link,gps_copy,0.01,0.0,0.0,0.0,0.0,0.0,1.0
+1597380892603496853,0,1597380850008887826,base_link,left_front_wheel,0.725,0.42,0.173025,0.0,0.0,0.0,1.0,0,1597380850008917357,base_link,left_rear_wheel,-0.825,0.47,0.173025,0.0,0.0,0.0,1.0,0,1597380850008920708,base_link,right_front_wheel,0.725,-0.42,0.173025,0.0,0.0,0.0,1.0,0,1597380850008923152,base_link,right_rear_wheel,-0.825,-0.47,0.173025,0.0,0.0,0.0,1.0
+1597380892603801169,0,1597380849881040091,base_link,imu_link,0.0,-0.3,0.52,0.0,0.0,0.0,1.0
+1597380897016557062,0,1597380897015492408,map,utm,-1130759.60632,-9203796.89395,0.0,2.9399402966e-16,-2.06272386819e-15,-0.0187785640937,0.999823667219

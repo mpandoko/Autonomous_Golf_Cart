@@ -1,0 +1,6 @@
+<launch>
+
+	<rosparam command="load" file="$(find golfi)/config/ukf_koloq_fix.yaml" />
+	<node name="ukf_localization_2d" pkg="golfi" type="vD_ukf_localization_2d" output="screen" />
+	
+</launch>

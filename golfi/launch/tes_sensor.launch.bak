@@ -1,0 +1,28 @@
+<launch>
+  <arg name="razor_config_file" default="$(find razor_imu_9dof)/config/my_razor.yaml"/>
+  <node pkg="razor_imu_9dof" type="imu_node.py" name="imu_node" output="screen">
+    <param name="port" value="/dev/ttyACM0"/>
+    <rosparam file="$(arg razor_config_file)" command="load"/>
+  </node>
+
+  <node pkg="rostopic" type="rostopic" name="echo_imu"
+    args="echo /imu" output="screen" />
+
+  <node name="nmea_serial_driver_node" pkg="nmea_navsat_driver" type="nmea_serial_driver" output="screen">
+    <param name="port" value="/dev/ttyACM2"/>
+    <param name="baud" value="4800" />
+    <param name="frame_id" value="gps" />
+    <param name="use_GNSS_time" value="False" />
+    <param name="time_ref_source" value="gps" />
+    <param name="useRMC" value="False" />
+  </node>
+
+  <node name="serial_node_tacho" pkg="rosserial_python" type="serial_node.py">
+    <param name="port" type="string" value="/dev/ttyACM3"/>
+    <param name="baud" type="int" value="57600"/>
+  </node>
+
+  <node pkg="rostopic" type="rostopic" name="echo_fix"
+    args="hz /imu" output="screen"/>
+
+</launch>

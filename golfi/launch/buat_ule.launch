@@ -1,0 +1,19 @@
+<!-- Launch file for test_ukf_localization_node_bag1;
+     modified by awin for experimental purpose with the apt rviz config and imported the golf cart urdf as robot description param -->
+
+<!-- In this run, we ran a Clearpath Husky with a slightly broken Microstrain 3DM-GX2 IMU
+     around a parking lot. The IMU was intentionally rotated +90 degrees about the X axis,
+     then rotated (extrinsically) -90 degrees about the Z axis. The IMU did not report 0
+     when facing east, however, but when facing north. -->
+
+<launch>
+  <node pkg="rosbag" type="play" name="player" args="--clock $(find golfi_localization)/bags/bag_polban_1.bag" /> <!-- tambahin launch-prefix="xterm -e" kalo mau buka new terminal -->
+
+</launch>
+<!--
+  perubahan:
+    ubah rviz config pake punya sendiri
+    robot description make urdf (dengan package xacro) golf cart tapi yang udah kumodif awin_golf_cart.xacro (padahal ga make fitur xacro wkwk)
+    hapus node if unless arg gui
+    hapus arg gui (itu buat gazebo)
+-->

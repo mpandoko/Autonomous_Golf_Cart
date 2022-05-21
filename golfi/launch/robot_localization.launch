@@ -1,0 +1,43 @@
+<launch>
+	<node pkg="golfi" type="odom_encoder_imu" name="odom_encoder_imu" ></node>
+	<!-- <node pkg="golfi" type="c8_odom_encoders" name="c8_odom_encoders" ></node> -->
+  <node pkg="golfi" type="copy_gps" name="copy_gps" ></node>
+  <node pkg="rostopic" type="rostopic" name="fake_gps_fix" args="pub /gps/fix sensor_msgs/NavSatFix --latch --file=$(find golfi)/lla/monpera.gps" />
+
+	<!-- Static fake TF transform -->
+	<node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_map_odom" args="0.0 0.0 0.0 0.0 0.0 0.0 map odom" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_odom_baselink" args="0.0 0.0 0.0 0.0 0.0 0.0 odom base_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baselink_gps" args="0.01 0 0 0 0 0 base_link gps_copy" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_baselink_imu" args="0 -0.3 0.52 0 0 0 base_link imu_link" />
+
+  <!-- 1 ukf, tanpa navsat -->
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_localization">
+    <rosparam command="load" file="$(find golfi)/config/robot_localization.yaml" />
+  </node>
+
+  <!-- pake navsat -->
+  <!-- <rosparam command="load" file="$(find golfi)/config/atwin_dual_ukf_navsat.yaml" />
+
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se_odom" clear_params="true">
+      <remap from="odometry/filtered" to="odometry/filtered_odom" />
+  </node>
+
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se_map" clear_params="true">
+      <remap from="odometry/filtered" to="odometry/filtered_map" />
+  </node>
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+    <remap from="odometry/filtered" to="odometry/filtered_map"/>
+    <remap from="gps/fix" to="gps_data"/>
+    <remap from="imu/data" to="/imu"/>
+  </node> -->
+
+  <arg name="model" default="$(find ultah_atwin)/src/urdf/green_golf_cart.xacro" />
+  <param name="robot_description" textfile="$(arg model)" />
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" />
+  <arg name="rvizconfig" default="$(find golfi)/config/atwin.rviz" />
+  <node pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" name="rviz" />
+  <!-- <node pkg="mapviz" type="mapviz" name="mapviz" output="screen"></node>
+  <node pkg="swri_transform_util" type="initialize_origin.py" name="initialize_origin" clear_params="true" /> -->
+
+</launch>

@@ -1,0 +1,52 @@
+
+
+<launch>
+  <!--
+    <arg name="output_final_position" default="false" />
+    <arg name="output_location" default="test.txt" />
+
+    <param name="/use_sim_time" value="false" />  -->
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_fake" args="0 0 0 0 0 0 map odom" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_fake2" args="0 0 0 0 0 0 odom base_link" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="bl_imu" args="0 0 1.385 -1.570796327 0 1.570796327 base_link imu_link" /> <!--pindahin imu_link ke tengah-->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="bl_gps" args="0.01 0 1.38 -1.570796327 0 1.570796327 base_link gps_copy" />
+
+    <node pkg="robot_localization" type="copy_gnss" name="copy_gps" clear_params="true"/> <!--works wonder benerin frame_id-->
+
+<!--menjalankan tiga node dual ukf navsat-->
+  <rosparam command="load" file="$(find robot_localization)/awin/params/dual_ukf_navsat_awin.yaml" />
+
+    <!-- <arg name="razor_config_file" default="$(find razor_imu_9dof)/config/my_razor.yaml"/>
+    <node pkg="razor_imu_9dof" type="imu_node.py" name="imu_node" output="screen">
+        <rosparam file="$(arg razor_config_file)" command="load"/>
+    </node> ada delay antara launch razor-pub terhadap launch test bag1, mungkin perlu dikasi delay pada kedua launch biar pas -->
+
+
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se_odom" clear_params="true">
+   <remap from="odometry/filtered" to="odometry/filtered_odom"/>
+  </node>
+
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se_map" clear_params="true">
+   <remap from="odometry/filtered" to="odometry/filtered_map"/>  <!--awalnya bingung remap2 ini buat apa-->
+  </node>
+
+  <node pkg="robot_localization" type="navsat_transform_node" name="navsat_transform" clear_params="true">
+      <remap from="odometry/filtered" to="odometry/filtered_map"/> <!--navsat should listen to the 'map' instance of the UKF node (previously the odom was remapped to "odometry/filtered_odom or the 'odom' instance of UKF-->
+      <remap from="/gps/fix" to="/gps_data"/> <!--menyesuaikan node copy_gps-->
+      <remap from="imu/data" to="imu"/>
+
+  </node>
+
+
+<!--tambahan-->
+  <arg name="rvizconfig" default="$(find robot_localization)/rviz/awin_dual_ukf_navsat_bag1.rviz" /> <!-- mari kita ubah rviz config biar pas nyala langsung ada map dan fixed frame-nya odom sehingga mobilnya yang jalan, terus diganti yang khusus dual ukf navsat -->
+  <arg name="model" default="$(find ultah_atwin)/src/urdf/green_golf_cart.xacro"/>
+  <param name="robot_description" textfile="$(arg model)" />
+
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> <!-- tapi robot_state_publisher apa si? -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />
+
+</launch>

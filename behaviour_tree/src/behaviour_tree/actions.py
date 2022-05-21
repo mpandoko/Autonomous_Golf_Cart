@@ -395,7 +395,8 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     
     # Generate waypoints with speed and curvature
     # Format [x, y, t, v, curv]
-    best_wp = vp.nominal_profile(tf_paths[bp], g_set[bp][-1], g_set[bp][-1])
+    # best_wp = vp.nominal_profile(tf_paths[bp], g_set[bp][-1], g_set[bp][-1])
+    best_wp = vp.nominal_profile(tf_paths[bp], curr_state[3], g_set[bp][-1])
     # print("wp_generated: ",best_wp)
 
     # Add starting waypoints

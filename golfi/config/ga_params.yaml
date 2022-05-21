@@ -1,0 +1,8 @@
+R_gnss: [0.09843, 0, 0, 0.0984]
+R_imu: 1.894e-06
+R_tach: 5.538e-06 #hasil itung
+initial_estimate_covariance_P: [16.11, 0, 0, 0, 0, 0, 12.96, 0, 0, 0, 0, 0, 6.962, 0,
+  0, 0, 0, 0, 11.24, 0, 0, 0, 0, 0, 3.423] #pernah tuning yg 4 awal tapi kayanya masi ngaco
+kappa: -2 #paper
+process_noise_covariance_Q: [0.57, 0, 0, 0, 0, 0, 0.001, 0, 0, 0, 0, 0, 23.91, 0, 0, 0, 0, 0,
+  21.86, 0, 0, 0, 0, 0, 2.025]

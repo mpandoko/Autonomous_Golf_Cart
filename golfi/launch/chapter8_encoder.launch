@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+	<arg name="model" default="$(find ultah_atwin)/src/urdf/golf_cart.xacro" />
+	<!-- <arg name="gui" default="False" /> -->
+	<param name="robot_description" textfile="$(find ultah_atwin)/src/urdf/green_golf_cart.xacro" />
+	<!-- <param name="use_gui" value="$(arg gui)"/> -->
+	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" ></node>
+	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find chapter8_tutorials)/config/customized.rviz" />
+	<node name="odom_imu" pkg="chapter8_tutorials" type="odom_imu" ></node>
+
+	<!-- Send a static GPS fix to every new subscriber. Edit latitude and longitude in launch/demo.gps to use your own position. -->
+	<node pkg="rostopic" type="rostopic" name="fake_gps_fix" args="pub /gps/fix sensor_msgs/NavSatFix --latch --file=$(find chapter8_tutorials)/lla/itb.gps" />
+
+	<!-- Start rviz with a pre-configured AerialMap instance. It will use the fake GPS fix from above. -->
+	<!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find rviz_satellite)/launch/demo.rviz"/> -->
+
+	<!-- Static fake TF transform -->
+	<node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_fake" args="1 0 0 0 0 0 map odom" />
+</launch>

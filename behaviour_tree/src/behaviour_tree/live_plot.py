@@ -20,9 +20,9 @@ a = np.min(mission_waypoint[:,1])-10
 b = np.max(mission_waypoint[:,1])+10
 
 gridsize = (6,9)
-fig = plt.figure(figsize=(6,9))
-ax1 = plt.subplot2grid(gridsize, (0,0),colspan=6,rowspan=5)
-ax2 = plt.subplot2grid(gridsize, (0,6),colspan=3,rowspan=3)
+fig = plt.figure(figsize=(9,5))
+ax1 = plt.subplot2grid(gridsize, (0,0),colspan=5,rowspan=5)
+ax2 = plt.subplot2grid(gridsize, (0,5),colspan=4,rowspan=5)
 
 x = np.linspace(0,10,100)
 y = np.linspace(5,5,100)
@@ -66,25 +66,32 @@ def animate(i):
         ax1.grid()
         
         ax2.scatter(i,curr_state[3],color='black')
-        print(manuver)
         ax2.set_xlabel('i')
         ax2.set_ylabel('v (m/s)')
         ax2.set_title('Velocity')
         ax2.set_xlim([i-10,i+10])
-        # SaveTxt
         
-        with open(txt_path, 'a') as f:
-            f.write(('%g;' * 4) % (curr_state[0],curr_state[1],curr_state[2],curr_state[3]))
-            f.writelines(manuver+';')
-            f.writelines(str(x)+';')
-            f.writelines(str(y)+';')
-            f.writelines(str(x_)+';')
-            f.writelines(str(y_)+';')
-            f.writelines('\n')
+        lead = cond.leader_selection()
+
+        print('manuver type: '+manuver)
+        print('golf cart pose')
+        print('     x    : '+curr_state[0])
+        print('     y    : '+curr_state[1])
+        print('     yaw  : '+curr_state[2])
+        print('     cv   : '+curr_state[3])
+        # SaveTxt
+        # with open(txt_path, 'a') as f:
+        #     f.write(('%g;' * 4) % (curr_state[0],curr_state[1],curr_state[2],curr_state[3]))
+        #     f.writelines(manuver+';')
+        #     f.writelines(str(x)+';')
+        #     f.writelines(str(y)+';')
+        #     f.writelines(str(x_)+';')
+        #     f.writelines(str(y_)+';')
+        #     f.writelines('\n')
     except:
         pass
 
-anim = FuncAnimation(fig,animate,interval=100,repeat_delay=5)
+anim = FuncAnimation(fig,animate,interval=50,repeat_delay=5)
  
 # Show the plot
 plt.grid()

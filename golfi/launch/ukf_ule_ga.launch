@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- <rosparam command ="load" file="$(find golfi)/config/ukf_ule_ga_params.yaml"/> -->
+  <rosparam command ="load" file="/home/anzulfa/KULIAH/TA/thesis_ws/src/golfi/config/ukf_params_ga.yaml"/>
+
+    <!--Launching the ukf_localization_node under the name -->
+	<node name="ukf_localization_2d" pkg="golfi" type="ukf_localization_2d" output="screen" />
+
+  <!-- <arg name="rvizconfig" default="$(find robot_localization)/rviz/awin_ukf_bag1.rviz" />
+  <arg name="model" default="$(find urdf)/urdf/awin_golf_cart.xacro"/> -->
+  <!-- <param name="robot_description" command="$(find xacro)/xacro $(arg model)" /> -->
+  <!-- <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> tapi robot_state_publisher apa si? -->
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" required="true" />  -->
+
+    <!-- <node name="mapviz" pkg="mapviz" type="mapviz" required="true" />  -->
+    <!-- <node name="odom_encoder_imu" pkg="robot_localization" type="odom_encoder_imu" clear_params="true" /> -->
+	<node name="utm" pkg="gps_common" type="utm_odometry_node" />
+
+  <node pkg="rosbag" type="play" name="rosbag_play" clear_params="true" output="screen" args="/home/anzulfa/KULIAH/TA/thesis_ws/src/golfi/bags/9okt_8_2.bag --topics /fix /imu /sensor_velocity "  required="true"/> <!--works wonder benerin frame_id-->
+  <node pkg="rosbag" type="record" name="rosbag_record" clear_params="true" args="record -O /home/anzulfa/KULIAH/TA/thesis_ws/src/golfi/bags/ga_temp.bag --a" /> <!--works wonder benerin frame_id-->
+<!--batesin pake -u biar estimasi yang di akhir2 ga ngelebihin bates ground truth yang dibuat oleh utm_terhubung-->
+
+</launch>

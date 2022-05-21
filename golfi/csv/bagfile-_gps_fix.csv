@@ -1,0 +1,2 @@
+%time,field.header.seq,field.header.stamp,field.header.frame_id,field.status.status,field.status.service,field.latitude,field.longitude,field.altitude,field.position_covariance0,field.position_covariance1,field.position_covariance2,field.position_covariance3,field.position_covariance4,field.position_covariance5,field.position_covariance6,field.position_covariance7,field.position_covariance8,field.position_covariance_type
+1597380892560141547,1,1435607489924811809,base_link,0,1,-6.895696,107.618579,27.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,2

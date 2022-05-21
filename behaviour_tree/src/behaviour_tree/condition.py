@@ -182,8 +182,8 @@ def d_rem(curr_state,mission_waypoint):
 # - waypoint = [x,y,yaw,curve,v]
 # - obj_ adalah matriks objek dalam occupancy grid
 def leader_selection(curr_state,waypoint):
-    c_location = rospy.get_param('~c_location', [-1.0, 1.0, 3.0]) # m
-    c_rad = rospy.get_param('~c_rad', [1.5, 1.5, 1.5]) # m
+    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
+    c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     #Colllision Check Class
     cc = CollisionChecker(c_location, c_rad, d_weight)

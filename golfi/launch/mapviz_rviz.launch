@@ -1,0 +1,14 @@
+<launch>
+
+  <node pkg="mapviz" type="mapviz" name="mapviz" output="screen"></node>
+  <node pkg="swri_transform_util" type="initialize_origin.py" name="initialize_origin" clear_params="true" />
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_odom_baselink" args="0.0 0.0 0.0 0.0 0.0 0.0 odom base_link" />
+  <node pkg="tf2_ros" type="static_transform_publisher" name="static_tf_map_odom" args="0.0 0.0 0.0 0.0 0.0 0.0 map odom" />
+
+  <!-- <arg name="rvizconfig" default="$(find golfi)/config/atwin.rviz" />
+  <node pkg="rviz" type="rviz" args="-d $(arg rvizconfig)" name="rviz" />
+  <arg name="model" default="$(find ultah_atwin)/src/urdf/green_golf_cart.xacro" />
+  <param name="robot_description" textfile="$(arg model)" />
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher" /> -->
+</launch>

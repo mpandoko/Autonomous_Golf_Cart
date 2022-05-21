@@ -85,11 +85,11 @@ def command_line_argument_parser():
 def create_root():
     #parameters
     v_thres = rospy.get_param('~v_threshold', 0.75) # m/s
-    a_maxx = rospy.get_param('~a_max', 0.1) # m/s^2
+    a_maxx = rospy.get_param('~a_max', 0.005) # m/s^2
     prediction_time = rospy.get_param('~pred_time', 2) #s
     v_trackspeed = rospy.get_param('~v_trackspeed', 1) #s
-    mission_type = rospy.get_param('~waypoint_mission','simulation')
-    mission = cond.mission_waypoint(mtype=mission_type)
+    # mission_type = rospy.get_param('~waypoint_mission','real')
+    mission = cond.mission_waypoint()
     
     
     #the root
