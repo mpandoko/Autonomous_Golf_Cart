@@ -71,14 +71,13 @@ def animate(i):
         ax2.set_title('Velocity')
         ax2.set_xlim([i-10,i+10])
         
-        lead = cond.leader_selection()
 
         print('manuver type: '+manuver)
         print('golf cart pose')
-        print('     x    : '+curr_state[0])
-        print('     y    : '+curr_state[1])
-        print('     yaw  : '+curr_state[2])
-        print('     cv   : '+curr_state[3])
+        print('     x    : ',curr_state[0])
+        print('     y    : ',curr_state[1])
+        print('     yaw  : ',curr_state[2])
+        print('     cv   : ',curr_state[3])
         # SaveTxt
         # with open(txt_path, 'a') as f:
         #     f.write(('%g;' * 4) % (curr_state[0],curr_state[1],curr_state[2],curr_state[3]))

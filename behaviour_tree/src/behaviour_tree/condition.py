@@ -40,7 +40,32 @@ from behaviour_tree.msg import Planner, ukf_states
 
 from behaviour_tree.dummies import obstacle,waypoints_dummies
 
-RUN = False\
+RUN = False
+
+wp_planner = {
+    'wp_type': None,
+    'x': [],
+    'y': [],
+    'yaw': [],
+    'v': [],
+    'curv': []
+}
+obj = {
+    'obj_len': [],
+    'obj_x': [],
+    'obj_y': [],
+    'obj_z': [],
+    'xc': [],
+    'zc': [],
+    'vxc': [],
+    'vzc': [],
+}
+local_state = {
+    'x':0.,
+    'y':0.,
+    'yaw':0.,
+    'v':0.,
+}
 
 def state_callback(msg_nav):
     global local_state
@@ -72,27 +97,49 @@ def planner_callback(planner_msg):
     wp_planner['v'] = planner_msg.v
     wp_planner['curv'] = planner_msg.curv
 
-def mission_waypoint(mtype='simulation',file='lurus_ica_2.npy'):
+def mission_waypoint(mtype='real',file='wp_22Mei1031.npy'):
     if (mtype=='real'):
-        mission_waypoint = np.load(os.path.abspath(__file__+'/../waypoints/'+file))
+        mission_waypoint = np.load(os.path.abspath(__file__+'/../../../../waypoints/waypoints/'+file))
     elif (mtype=='simulation'):
-        mission_waypoint = np.array(waypoints_dummies().straight())
+        mission_waypoint = np.array(waypoints_dummies().diagonal())
+    # print('waypoint misi: ',len(mission_waypoint))
     return mission_waypoint
     
+# rospy.init_node('behaviour_tree', anonymous=True)
+rospy.Subscriber('/ukf_states', ukf_states, state_callback)
+rospy.Subscriber('/wp_planner', Planner, planner_callback)
+rospy.Subscriber('/object_points', obj_points, perception_callback)
 
 def waypoint():
     """
     Return updated waypoint from published waypoints
     """
     global wp_planner
-    
+    wp_planner_copy = wp_planner.copy()
     curr_waypoint = []
+    print('wp_type yang subscribe kondisi.py')
+    print(wp_planner['wp_type'])
     if (wp_planner['wp_type']==None):
         curr_waypoint = mission_waypoint()
     else:
-        for i in range (len(wp_planner['x'])):
-            curr_waypoint.append([wp_planner['x'][i],wp_planner['y'][i],wp_planner['yaw'][i],wp_planner['v'][i],wp_planner['curv'][i]])
+        for i in range (len(wp_planner_copy['x'])):
+            # print("wp_planner")
+            # print(i)  
+            # print(len(wp_planner_copy['x']))
+            # print(len(wp_planner_copy['y']))
+            # print(len(wp_planner_copy['yaw']))
+            # print(len(wp_planner_copy['v']))
+            # print(len(wp_planner_copy['curv']))
+            curr_waypoint.append([wp_planner_copy['x'][i],wp_planner_copy['y'][i],wp_planner_copy['yaw'][i],wp_planner_copy['v'][i],wp_planner_copy['curv'][i]])
             np.array(curr_waypoint)
+    # print('curr_waypoint:')
+    # for i in range (5):
+    #     print(curr_waypoint[i])
+    # print(len(curr_waypoint))
+    # print('mission waypo: ')
+    # for i in range (5):
+    #     print( mission_waypoint()[i])
+    # print(len(mission_waypoint()))
     return curr_waypoint
 
 def manuver_type():
@@ -114,20 +161,21 @@ def pose():
     """
     global local_state
     global RUN
-    wp = mission_waypoint(mtype='simulation')
+    # wp = mission_waypoint(mtype='simulation')
     
-    # parameter adjustment for yaw and waypoints
-    # where the local state.
-    # is in subtracted by first waypoint and first ever local state when the car is ran
-    global first_yaw
-    if (not RUN):
-        first_yaw = local_state['yaw']
-        print('fy = ',first_yaw)
-    else:
-        first_yaw = first_yaw
+    # # parameter adjustment for yaw and waypoints
+    # # where the local state.
+    # # is in subtracted by first waypoint and first ever local state when the car is ran
+    # global first_yaw
+    # if (not RUN):
+    #     first_yaw = local_state['yaw']
+    #     print('fy = ',first_yaw)
+    # else:
+    #     first_yaw = first_yaw
     
     # Step 1: Yaw disamakan dalam UTM, dalam kasus ini, Waypoints dianggap sudah UTM
-    curr_state = [local_state['x'], local_state['y'], local_state['yaw']-(first_yaw-wp[0][2]), local_state['v']]
+    # curr_state = [local_state['x'], local_state['y'], local_state['yaw']-(first_yaw-wp[0][2]), local_state['v']]
+    curr_state = [local_state['x'], local_state['y'], local_state['yaw'], local_state['v']]
     # print("current vehicle state: x = %.2f, y = %.2f, yaw = %.4f rad, v = %.2f m/s" %(curr_state[0],curr_state[1],curr_state[2],curr_state[3]))
     RUN = True
     return curr_state
@@ -138,7 +186,7 @@ def obstacles_classifier():
     global obj
     
     # Uncoment kalau dummies
-    # obj = obstacle().fast()
+    obj = obstacle().slow()
     
     # print('x,z = (',obj['xc'],obj['zc'],')')
     # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
@@ -259,8 +307,10 @@ def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
         if dist < min_dist:
             min_dist = dist
             min_idx = i
-
+    # print('==================lookahead idx====================')
+    # print(min_idx)
     total_dist = min_dist
+    # print('totaldist',total_dist)
     lookahead_idx = min_idx
     for i in range(min_idx + 1, len(waypoint)):
         if total_dist >= ld_dist:
@@ -269,7 +319,7 @@ def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
                 waypoint[i][0] - waypoint[i-1][0],
                 waypoint[i][1] - waypoint[i-1][1]]))
         lookahead_idx = i
-    
+    # print('===================================================')
     return min_idx,lookahead_idx
 
 
@@ -286,18 +336,18 @@ def occupancy_grid(obstacle, pred_time):
     vy_ = obstacle['vxc']
 
     # # Real
-    # for i in range (len(obstacle['obj_x'])):
-    #     x = obstacle['obj_z'][i]
-    #     y = obstacle['obj_x'][i]
-    #     x_.append(x*np.cos(yaw)-y*np.sin(yaw))
-    #     y_.append(x*np.sin(yaw)+y*np.cos(yaw))
-    
-    # Simulasi
     for i in range (len(obstacle['obj_x'])):
         x = obstacle['obj_z'][i]
         y = obstacle['obj_x'][i]
-        x_.append(x)
-        y_.append(y)
+        x_.append(x*np.cos(yaw)-y*np.sin(yaw))
+        y_.append(x*np.sin(yaw)+y*np.cos(yaw))
+    
+    # Simulasi
+    # for i in range (len(obstacle['obj_x'])):
+    #     x = obstacle['obj_z'][i]
+    #     y = obstacle['obj_x'][i]
+    #     x_.append(x)
+    #     y_.append(y)
     
     for i in range(pred_time-1):
         for j in range(len(x_)):
@@ -310,26 +360,31 @@ def occupancy_grid(obstacle, pred_time):
 # is there free collision path
 # The output is either True or None
 def possible_path(curr_state,mission_waypoints, pred_time):
+    # print("curr_state_cond")
+    # print(curr_state)
+    # curr_state = curr_state + [0,0,np.pi,0]
+    # print(curr_state)
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
     n_offset = rospy.get_param('~n_offset', 9) # m
-    offset = rospy.get_param('~offset', 0.5) # m
+    offset = rospy.get_param('~offset', 1.5) # m
     c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
     c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
-    
+    print("a")
     # waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]
     lp = LocalPlanner(mission_waypoints, ld_dist, n_offset, offset)
     cc = CollisionChecker(c_location, c_rad, d_weight)
+    print("b")
     
     
     ### Generate feasible paths for collision checker
     # Get lookahead index
     ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
     # print('Lookahead: ', mission_waypoints[ld_idx])
-    
+    print("c")
     # Get offset goal states
     g_set = lp.get_goal_state_set(mission_waypoints[ld_idx], curr_state)
-    
+    print("d")
     # Plan paths
     path_generated = lp.plan_paths(g_set)
     
@@ -363,35 +418,6 @@ def possible_path(curr_state,mission_waypoints, pred_time):
 # rospy.init_node('condition', anonymous=True)
 # Set callback data and variables
 # Setup dibawah karena agar tidak dipanggil fungsi diatasnya
-
-wp_planner = {
-    'wp_type': None,
-    'x': [],
-    'y': [],
-    'yaw': [],
-    'v': [],
-    'curv': []
-}
-obj = {
-    'obj_len': [],
-    'obj_x': [],
-    'obj_y': [],
-    'obj_z': [],
-    'xc': [],
-    'zc': [],
-    'vxc': [],
-    'vzc': [],
-}
-local_state = {
-    'x':0.,
-    'y':0.,
-    'yaw':0.,
-    'v':0.,
-}
-# rospy.init_node('behaviour_tree', anonymous=True)
-rospy.Subscriber('/ukf_states', ukf_states, state_callback)
-rospy.Subscriber('/wp_planner', Planner, planner_callback)
-rospy.Subscriber('/object_points', obj_points, perception_callback)
 
 def condition():
     # In ROS, nodes are uniquely named. If two nodes with the same

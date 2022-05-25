@@ -5,7 +5,7 @@ from behaviour_tree.local_planner.velocity_planner import VelocityPlanner
 
 
 class obstacle():
-    def __init__(self, distance=7.5):
+    def __init__(self, distance=4):
         self.dist = distance
     
     def slow(self):
@@ -23,8 +23,8 @@ class obstacle():
             'obj_z': z,
             'xc': [0],
             'zc': [np.mean(z)],
-            'vxc': [0],
-            'vzc': [0.5],
+            'vxc': [0.],
+            'vzc': [0.],
         }
 
         return obj

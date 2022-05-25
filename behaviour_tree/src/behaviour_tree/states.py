@@ -35,7 +35,7 @@ class IsArrive(py_trees.behaviour.Behaviour):
         self.curr_state = cond.pose()
         d_remain = cond.d_rem(self.curr_state, self.mission_waypoint)
         print("is vehicle almost arrive?")
-        if (d_remain<=10):
+        if (d_remain<=4):
             self.feedback_message = "Okey, Let's Stop"
             print("Yes! 10 meters again, we will slowdown")
             return py_trees.common.Status.SUCCESS
