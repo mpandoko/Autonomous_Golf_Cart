@@ -72,7 +72,7 @@ def state_callback(msg_nav):
     
     local_state['x'] = msg_nav.x
     local_state['y'] = msg_nav.y
-    local_state['v'] = np.sqrt(msg_nav.vx**2 + msg_nav.vy**2)
+    local_state['v'] = np.sqrt(msg_nav.vx**2 + msg_nav.vy**2) if (msg_nav.vx > 0.05 ) else 0.
     local_state['yaw'] = msg_nav.yaw_est
      
 def perception_callback(data):
@@ -97,11 +97,11 @@ def planner_callback(planner_msg):
     wp_planner['v'] = planner_msg.v
     wp_planner['curv'] = planner_msg.curv
 
-def mission_waypoint(mtype='real',file='wp_22Mei1031.npy'):
+def mission_waypoint(mtype='simulation',file='wp_22Mei1031.npy'):
     if (mtype=='real'):
         mission_waypoint = np.load(os.path.abspath(__file__+'/../../../../waypoints/waypoints/'+file))
     elif (mtype=='simulation'):
-        mission_waypoint = np.array(waypoints_dummies().diagonal())
+        mission_waypoint = np.array(waypoints_dummies().straight())
     # print('waypoint misi: ',len(mission_waypoint))
     return mission_waypoint
     
@@ -186,7 +186,7 @@ def obstacles_classifier():
     global obj
     
     # Uncoment kalau dummies
-    obj = obstacle().slow()
+    # obj = obstacle().slow()
     
     # print('x,z = (',obj['xc'],obj['zc'],')')
     # print('vx,vz = (',obj['vxc'],obj['vzc'],')')
@@ -207,6 +207,7 @@ def obstacles_classifier():
         }
         obs.append(obj_row)
         a = b
+    # print('ada',len(obs[0]['obj_x']))
     
     return obs
 
@@ -230,8 +231,8 @@ def d_rem(curr_state,mission_waypoint):
 # - waypoint = [x,y,yaw,curve,v]
 # - obj_ adalah matriks objek dalam occupancy grid
 def leader_selection(curr_state,waypoint):
-    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
-    c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
+    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.7]) # m
+    c_rad = rospy.get_param('~c_rad', [1., 1., 1.]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     #Colllision Check Class
     cc = CollisionChecker(c_location, c_rad, d_weight)
@@ -244,14 +245,21 @@ def leader_selection(curr_state,waypoint):
 
     idx = get_start_and_lookahead_index(waypoint,curr_state[0],curr_state[1],0)
     yaw = curr_state[2]-waypoint[idx[0]][2]
+    print('yawiii: ', yaw)
     
     x_p = []
     y_p = []
     t_p = []
     for i in range (idx[0],len(waypoint)):
-        x_p.append(waypoint[i][0]-waypoint[idx[0]][0])
-        y_p.append(waypoint[i][1]-waypoint[idx[0]][1])
-        t_p.append(waypoint[i][2]-waypoint[idx[0]][2])
+        yawt = waypoint[idx[0]][2]
+        x = waypoint[i][0]-waypoint[idx[0]][0]
+        y = waypoint[i][1]-waypoint[idx[0]][1]
+        z = waypoint[i][2]-yawt
+        # x_p.append(x)
+        # y_p.append(y)
+        x_p.append(x*np.cos(-yawt)-y*np.sin(-yawt))
+        y_p.append(x*np.sin(-yawt)+y*np.cos(-yawt))
+        t_p.append(z)
     path = [x_p, y_p, t_p]
     paths = [path]
 
@@ -268,6 +276,8 @@ def leader_selection(curr_state,waypoint):
         # return True if the path is free collision
         # return False if the path is collided
         coll = cc.collision_check(paths, obj_)
+        print('tidak ada leader: ')
+        print(coll)
 
         # Jika dicek terjadi collision
         # yang artinya ada leader, karena ada obstacle pada path
@@ -283,18 +293,21 @@ def is_leader_ex(curr_state,waypoint):
     if (len(id)):
         return True
     else:
+        print('Kosong')
         return False
     
 def leader_velocity(curr_state,waypoint):
     vzc = leader_selection(curr_state,waypoint)[1]
     if vzc==[]:
         return None
+    print('Kecepatan leader: ',vzc[0])
     return vzc[0]
 
 def leader_distance(curr_state,waypoint):
     zc = leader_selection(curr_state,waypoint)[2]
     if zc==[]:
         return None
+    print('Jarak leader :',zc[0])
     return zc[0]
 
 def get_start_and_lookahead_index(waypoint, x, y, ld_dist):
@@ -336,18 +349,18 @@ def occupancy_grid(obstacle, pred_time):
     vy_ = obstacle['vxc']
 
     # # Real
-    for i in range (len(obstacle['obj_x'])):
-        x = obstacle['obj_z'][i]
-        y = obstacle['obj_x'][i]
-        x_.append(x*np.cos(yaw)-y*np.sin(yaw))
-        y_.append(x*np.sin(yaw)+y*np.cos(yaw))
-    
-    # Simulasi
     # for i in range (len(obstacle['obj_x'])):
     #     x = obstacle['obj_z'][i]
-    #     y = obstacle['obj_x'][i]
-    #     x_.append(x)
-    #     y_.append(y)
+    #     y = -obstacle['obj_x'][i]
+    #     x_.append(x*np.cos(yaw)-y*np.sin(yaw))
+    #     y_.append(x*np.sin(yaw)+y*np.cos(yaw))
+    
+    # Simulasi
+    for i in range (len(obstacle['obj_x'])):
+        x = obstacle['obj_z'][i]
+        y = -obstacle['obj_x'][i]
+        x_.append(x)
+        y_.append(y)
     
     for i in range(pred_time-1):
         for j in range(len(x_)):
@@ -365,10 +378,10 @@ def possible_path(curr_state,mission_waypoints, pred_time):
     # curr_state = curr_state + [0,0,np.pi,0]
     # print(curr_state)
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
-    n_offset = rospy.get_param('~n_offset', 9) # m
-    offset = rospy.get_param('~offset', 1.5) # m
-    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
-    c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
+    n_offset = rospy.get_param('~n_offset', 3) # m
+    offset = rospy.get_param('~offset', 3.) # m
+    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.7]) # m
+    c_rad = rospy.get_param('~c_rad', [1.2, 1.2, 1.2]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     print("a")
     # waypoints = waypoints-[waypoints[0][0],waypoints[0][1],0,0,0]
@@ -376,15 +389,19 @@ def possible_path(curr_state,mission_waypoints, pred_time):
     cc = CollisionChecker(c_location, c_rad, d_weight)
     print("b")
     
-    
     ### Generate feasible paths for collision checker
     # Get lookahead index
     ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
     # print('Lookahead: ', mission_waypoints[ld_idx])
-    print("c")
+    print("c: indeks lookahead")
+    print(ld_idx)
     # Get offset goal states
     g_set = lp.get_goal_state_set(mission_waypoints[ld_idx], curr_state)
     print("d")
+    print('curr_state yaw:', curr_state[2])
+    print('Lookahead yaw: ', mission_waypoints[ld_idx][2])
+    print('lookahead x,y: ',mission_waypoints[ld_idx][0],mission_waypoints[ld_idx][1])
+    
     # Plan paths
     path_generated = lp.plan_paths(g_set)
     
@@ -413,7 +430,6 @@ def possible_path(curr_state,mission_waypoints, pred_time):
             return True
         else:
             False
-
 
 # rospy.init_node('condition', anonymous=True)
 # Set callback data and variables

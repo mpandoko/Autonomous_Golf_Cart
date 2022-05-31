@@ -149,6 +149,7 @@ def detect(opt):
     for frame_idx, (path, depth, distance, depth_scale, img, im0s, color_intrin, aligned_df, verts, vid_cap, s) in enumerate(dataset):
         if rospy.is_shutdown():
             break
+        t1b = t1
         t1 = time_sync()
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -229,8 +230,8 @@ def detect(opt):
                             xy = rs.rs2_project_point_to_pixel(color_intrin, [x_m, y_m, z_m])
                             width = 848
                             height = 480
-                            vx = output[5] / (t5-t1)
-                            vz = output[9] / (t5-t1)
+                            vx = output[5] / (t1-t1b)
+                            vz = output[9] / (t1-t1b)
                             w = output[2]
                             h = output[3]
                             x1 = max(int(xy[0] - w / 2), 0) + 1
@@ -247,7 +248,7 @@ def detect(opt):
                                 break
                             zs = object_points[:, 2]
                             
-                            # Get z percentile 40 (where most likely the object blob is, 
+                            # Get first quartile z (where most likely the object blob is, 
                             # think of it like medians but more likely to pick the foreground object instead of the background)
                             z_ = np.percentile(zs, 25)
                             print("z_")
@@ -367,7 +368,7 @@ if __name__ == '__main__':
     parser.add_argument('--save-vid', action='store_true', help='save video tracking results')
     parser.add_argument('--save-txt', default='true', help='save MOT compliant results to *.txt')
     # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
-    parser.add_argument('--classes', nargs='+', type=int, default='0', help='filter by class: --class 0, or --class 16 17')
+    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --class 0, or --class 16 17')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--evaluate', action='store_true', help='augmented inference')

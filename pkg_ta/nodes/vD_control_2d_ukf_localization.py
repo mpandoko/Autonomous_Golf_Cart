@@ -15,7 +15,7 @@ from behaviour_tree.msg import Planner
 import behaviour_tree.condition as cond
 
 min_throttle = 0.0
-max_throttle = 0.25
+max_throttle = 0.5
 max_steer_arduino = 28.
 min_steer_arduino = -28.#-35.
 
@@ -44,11 +44,11 @@ def callback(msg_nav):
 
     state['x'] = msg_nav.x
     state['y'] = msg_nav.y
-    state['v'] = np.sqrt(msg_nav.vx**2 + msg_nav.vy**2)
-    # state['yaw'] = msg_nav.yaw_est    
+    state['v'] = np.sqrt(msg_nav.vx**2 + msg_nav.vy**2) if (msg_nav.vx > 0.05 ) else 0.
+    state['yaw'] = msg_nav.yaw_est
     # state['yaw'] = atan2(2 * (nav_msg.pose.pose.orientation.w * nav_msg.pose.pose.orientation.z + nav_msg.pose.pose.orientation.x * nav_msg.pose.pose.orientation.y), 1 - 2 * (nav_msg.pose.pose.orientation.y**2 + nav_msg.pose.pose.orientation.z**2))
     # state['yaw'] = msg_nav.yaw_imu
-    state['yaw'] = msg_nav.yaw_est if (state['v'] < 0.4) else wrap_angle(msg_nav.yaw_dydx - np.pi/2)
+    # state['yaw'] = msg_nav.yaw_est if (state['v'] < 0.4) else wrap_angle(msg_nav.yaw_dydx - np.pi/2)
 
     RUN = True
 
@@ -81,15 +81,16 @@ kv = rospy.get_param('~kv', 1.00)
 lateral_dead_band = rospy.get_param('~lateral_dead_band', 0.025)
 sat_lat_max = rospy.get_param('~sat_lat_max', 0.6109)
 sat_lat_min = rospy.get_param('~sat_lat_min', -0.4887)
-# waypoints_path = rospy.get_param('~waypoints_path', 'wp_monev_baru.npy')
-# waypoints_path = os.path.abspath(__file__+'/../../src/waypoints/waypoints/' + waypoints_path)
+# waypoints_path = rospy.get_param('~waypoints_path', 'wp_21mei_1435.npy')
+# waypoints_path = 'wp_22Mei1031.npy'
+# waypoints_path = os.path.abspath(__file__+'/../../../waypoints/waypoints/' + waypoints_path)
 
 feed_forward_params = np.array([ff_1, ff_2])
 sat_long = np.array([sat_long_min, sat_long_max])
 sat_lat = np.array([sat_lat_min, sat_lat_max])
 
 # waypoints = np.array(np.load(waypoints_path))
-waypoints = cond.mission_waypoint(mtype='simulation')
+waypoints = cond.mission_waypoint()
 
 # Create the controller object
 controller = Controller(kp, ki, kd, feed_forward_params, sat_long,\
@@ -140,22 +141,24 @@ while not rospy.is_shutdown():
         
         # Change message to waypoints format
         ## [x, y, yaw, v, curv]
-        for i in range(len(planner['x'])):
-            best_wp.append([planner['x'][i], planner['y'][i], planner['yaw'][i],
-                           planner['v'][i], planner['curv'][i]])
+        planner_copy = planner.copy()
+        for i in range(len(planner_copy['x'])):
+            best_wp.append([planner_copy['x'][i], planner_copy['y'][i], planner_copy['yaw'][i],
+                           planner_copy['v'][i], planner_copy['curv'][i]])
         # print(np.array(best_wp))
         # Update waypoints
         controller.update_waypoints(np.array(best_wp))
 
     ### Calculate the control signal
     long, lat, lyap_gain = controller.calculate_control_signal(delta_t, state['x'],
+    # long, lat, = controller.calculate_control_signal(delta_t, state['x'],
                                                     state['y'], state['v'],
                                                     state['yaw'])
 
     # ### Get the error profile
-    # err = controller.get_error()
+    err = controller.get_error()
     # ### Get the reference
-    # ref = controller.get_instantaneous_setpoint()
+    ref = controller.get_instantaneous_setpoint()
 
     ### Send the message
     # Header
@@ -164,7 +167,9 @@ while not rospy.is_shutdown():
     print(lat)
     # Control action
     msg.action_steer = max(min(-1*np.rad2deg(lat), max_steer_arduino), min_steer_arduino) # lat ~ (rad)
+    # msg.action_steer = 20.
     msg.action_throttle = max(min(long, max_throttle), min_throttle)
+    # msg.action_throttle = 0.1
     #msg.action_brake = max(min(-long, max_brake), 0.)
     msg.action_brake = 0.
     print("steer")

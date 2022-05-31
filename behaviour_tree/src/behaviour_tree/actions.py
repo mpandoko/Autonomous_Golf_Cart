@@ -52,7 +52,7 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     # print("curr state action")
     # print(curr_state)
     freq = rospy.get_param('~freq', 10) # Hz
-    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 15.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
     rate = rospy.Rate(freq) # Hz
@@ -141,7 +141,7 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
     msg.v = v
     msg.curv = curv
     
-    axx = cond.waypoint()
+    # axx = cond.waypoint()
     # # Plot for debuging
     # idx = [i for i in range(len(v))]
     
@@ -178,7 +178,7 @@ def track_speed(curr_state, mission_waypoint, v_ts, a_max):
 
 def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     freq = rospy.get_param('~freq', 10) # Hz
-    ld_dist = rospy.get_param('~ld_dist', 10.0) # m
+    ld_dist = rospy.get_param('~ld_dist', 15.0) # m
     
     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
     rate = rospy.Rate(freq) # Hz
@@ -198,7 +198,7 @@ def follow_leader(curr_state, mission_waypoint, waypoint, a_max):
     #Asumsi ketika selisih jarak 5m, kecepatan kendaraan biar 1m/s
     Kgap = 0.2
     
-    d_min = 2.4
+    d_min = 3.4
     l_veh = 2.4
     d_des = max(l_veh*curr_state[3]/5, d_min)
     d_act = cond.leader_distance(curr_state,waypoint)
@@ -303,10 +303,10 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     # print(curr_state)
     freq = rospy.get_param('~freq', 10) # Hz
     ld_dist = rospy.get_param('~ld_dist', 10.0) # m
-    n_offset = rospy.get_param('~n_offset', 9) # m
-    offset = rospy.get_param('~offset', 1.5) # m
-    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.2]) # m
-    c_rad = rospy.get_param('~c_rad', [0.9, 0.9, 0.9]) # m
+    n_offset = rospy.get_param('~n_offset', 3) # m
+    offset = rospy.get_param('~offset', 3.) # m
+    c_location = rospy.get_param('~c_location', [-0.2, 1.2, 2.7]) # m
+    c_rad = rospy.get_param('~c_rad', [1.2, 1.2, 1.2]) # m
     d_weight = rospy.get_param('~d_weight', 0.5)
     
     # Create local planner classes
@@ -347,6 +347,7 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     
     # Get lookahead index
     ld_idx = lp.get_lookahead_index(curr_state[0], curr_state[1])
+    print('curr_state yaw:', curr_state[2])
     print('Lookahead yaw: ', mission_waypoints[ld_idx][2])
     
     # Get offset goal states, pada acuan lokal
@@ -464,44 +465,47 @@ def switch_lane(curr_state,mission_waypoints,pred_time,a_max):
     # plt.ylabel('v')
     # plt.show()
     # Publish the message
-    print('currstate vs yaw pertama waypoint yang digenerate')
-    print(curr_state)
-    print(yaw[0])
-    pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
-    pub.publish(msg)
-    # while(True):
-    #     # print(msg)
-    #     pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
-    #     rate = rospy.Rate(freq) 
-    #     # print("wp trackspeed")
-    #     # print(msg) 
-    #     pub.publish(msg)
-    #     obstacles = cond.obstacles_classifier()
-    #     obj_ = []
-    #     x_ = []
-    #     z_ = []
-    #     for obstacle in obstacles:
-    #         x, z = cond.occupancy_grid(obstacle,pred_time)
-    #         x_+=x
-    #         z_+=z
-    #     for i in range (len(x_)):
-    #         obj_.append([x_[i],z_[i]])
-    #     obj_ = np.array(obj_)  
-    #     # Collision Check
-    #     # return true if free collision
-    #     # return false if collision
-    #     coll = cc.collision_check([path_generated[0][bp]], obj_)
-    #     distance = cond.d_rem(cond.pose(), cond.waypoint())
-    #     print("distance")
-    #     print(distance)
-    #     # print('panjang waypointtt::  ',len(cond.waypoint()))
-    #     if not coll[0]:
-    #         print("STATUS: Collision detected, switching lane end")
-    #         break
-    #     elif (distance<=0.25):
-    #         print("STATUS: Vehicle has successfully switched lane")
-    #         break
-    #     print("Vehicle is switching lane, no collision detected")
+    # print('currstate')
+    # print(curr_state)
+    # print('vs waypoint yang digenerate')
+    # print('awal   : ',x[0],y[0],yaw[0],v[0])
+    # print('akhir  : ',x[-1],y[-1],yaw[-1],v[-1])
+    # pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+    # pub.publish(msg)
+    while(True):
+        # print(msg)
+        pub = rospy.Publisher('/wp_planner', Planner, queue_size=1)
+        rate = rospy.Rate(freq) 
+        # print("wp trackspeed")
+        # print(msg) 
+        pub.publish(msg)
+        obstacles = cond.obstacles_classifier()
+        obj_ = []
+        x_ = []
+        z_ = []
+        for obstacle in obstacles:
+            x, z = cond.occupancy_grid(obstacle,pred_time)
+            x_+=x
+            z_+=z
+        for i in range (len(x_)):
+            obj_.append([x_[i],z_[i]])
+        obj_ = np.array(obj_)  
+        # Collision Check
+        # return true if free collision
+        coll = cc.collision_check([path_generated[0][bp]], obj_)
+        print('',coll)
+        # return false if collisionrated[0][bp]], obj_)
+        distance = cond.d_rem(cond.pose(), cond.waypoint())
+        print("distance")
+        print(distance)
+        # print('panjang waypointtt::  ',len(cond.waypoint()))
+        if not coll[0]:
+            print("STATUS: Collision detected, switching lane end")
+            break
+        elif (distance<=0.25):
+            print("STATUS: Vehicle has successfully SWITCH LANE")
+            break
+        print("Vehicle is switching lane, no collision detected")
 
    
 def decelerate_to_stop(curr_state, xf,yf,yawf, a_max):

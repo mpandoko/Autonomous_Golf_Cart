@@ -12,6 +12,7 @@ import numpy as np
 import copy
 from behaviour_tree.local_planner.spiral_generator import SpiralGenerator
 from math import sin, cos, pi, sqrt
+import matplotlib.pyplot as plt
 
 class LocalPlanner(object):
     def __init__(self, waypoints, ld_dist, num_paths, path_offset):
@@ -96,6 +97,7 @@ class LocalPlanner(object):
         elif goal_t < -np.pi:
             goal_t += 2*np.pi
             
+        print(goal_t)
         goal_state_set = []
         
         for i in range(self._num_paths):
@@ -108,7 +110,7 @@ class LocalPlanner(object):
                                    goal_y + y_offset,
                                    goal_t,
                                    goal_v])
-        
+            print(goal_state_set[i][0],goal_state_set[i][1],goal_state_set[i][2])
         return goal_state_set
     
     def plan_paths(self, goal_state_set):
@@ -130,11 +132,14 @@ class LocalPlanner(object):
             if np.linalg.norm([path[0][-1] - goal_state[0], 
                                path[1][-1] - goal_state[1], 
                                path[2][-1] - goal_state[2]]) > 0.1:
+                # paths.append(path)
                 path_validity.append(False)
             else:
                 paths.append(path)
                 path_validity.append(True)
-        
+            # plt.plot(path[0],path[1])
+            # plt.show()
+            
         return paths, path_validity
     
     def transform_paths(self, paths, ego_state):
