@@ -87,7 +87,7 @@ def create_root():
     v_thres = rospy.get_param('~v_threshold', 0.5) # m/s
     a_maxx = rospy.get_param('~a_max', 0.005) # m/s^2
     prediction_time = rospy.get_param('~pred_time', 2) #s
-    v_trackspeed = rospy.get_param('~v_trackspeed', 0.7) #s
+    v_trackspeed = rospy.get_param('~v_trackspeed', 1.5) #s
     # mission_type = rospy.get_param('~waypoint_mission','real')
     mission = cond.mission_waypoint()
     

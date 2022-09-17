@@ -8,36 +8,36 @@
 	<gui>
 		<ortho>false</ortho>
 		<show_forces>true</show_forces>  <force_scale>0.01</force_scale>
-		<cam_distance>35</cam_distance>
+		<cam_distance>45</cam_distance>
 		<fov_deg>35</fov_deg>
 		<refresh_fps>20</refresh_fps>
-		<!-- <follow_vehicle>r1</follow_vehicle> -->
+		<!-- <follow_vehicle>r2</follow_vehicle> -->
 	</gui>
 
 
 	<!-- ========================
 		   Scenario definition
 	     ======================== -->
-	<element class="occupancy_grid">
-		<file>highway.jpg</file>
+	<!-- <element class="occupancy_grid">
+		<file>highway.png</file>
 		<resolution>0.1</resolution>
 		<centerpixel_x>0</centerpixel_x>
 		<centerpixel_y>140</centerpixel_y>
-	</element>
+	</element> -->
 
 	<!-- ground -->
-	<!-- <element class="horizontal_plane">
+	<element class="horizontal_plane">
 		<cull_face>BACK</cull_face>
-		<x_min>-20</x_min>
-		<y_min>-20</y_min>
-		<x_max> 200</x_max>
-		<y_max> 20</y_max>
+		<x_min>-10</x_min>
+		<y_min>-10</y_min>
+		<x_max> 100</x_max>
+		<y_max> 10</y_max>
 		<z>0.0</z>
-	</element> -->
+	</element>
 
 	<!-- ground grid (for visual reference) -->
 	<element class="ground_grid">
-		<!--<floating>true</floating>-->
+		<floating>true</floating>
 	</element>
 
 	<!-- =============================
@@ -190,7 +190,7 @@
 	</vehicle>
 
 	<vehicle name="r2" class="car_ackermann">
-		<init_pose>0.01 0.01 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
+		<init_pose>0 0 0</init_pose>  <!-- In global coords: x,y, yaw(deg) -->
 		<init_vel>0 0 0</init_vel>  <!-- In local coords: vx,vy, omega(deg/s) -->
 
 		<publish>

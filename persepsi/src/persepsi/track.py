@@ -8,9 +8,6 @@ os.environ["MKL_NUM_THREADS"] = "1"
 os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
 os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
-# sys.path.append(os.path.abspath(__file__+"/../"))
-# sys.path.append(os.path.abspath(__file__+"/../yolov5/"))
-
 import sys
 import argparse
 import platform
@@ -21,8 +18,6 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 import pyrealsense2 as rs
-# PKG = 'numpy_tutorial'
-# import roslib; roslib.load_manifest(PKG)
 import rospy
 
 from persepsi.yolov5.models.experimental import attempt_load
@@ -37,8 +32,6 @@ from persepsi.deep_sort.utils.parser import get_config
 from persepsi.deep_sort.deep_sort import DeepSort
 from persepsi.utils2.object_coordinate import *
 from persepsi.msg import obj_points
-from rospy.numpy_msg import numpy_msg
-from rospy_tutorials.msg import Floats
 
 ### ROS
 
@@ -50,7 +43,6 @@ print('Creating ROS Publisher...')
 freq = rospy.get_param('~freq', 30.) # Hz
 
 # Create publisher
-# pub = rospy.Publisher('/object_points', numpy_msg(Floats), queue_size = 1)
 pub = rospy.Publisher('/object_points', obj_points, queue_size = 1)
 rate = rospy.Rate(freq) # Hz
 
@@ -122,12 +114,17 @@ def detect(opt):
     if show_vid:
         show_vid = check_imshow()
 
+    # best resolution for d455 accuracy
+    # https://support.intelrealsense.com/hc/en-us/community/posts/4412175528979-Z-accuracy-for-D455
+    width = 848
+    height = 480
+
     # Dataloader
     if webcam:
         show_vid = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
         #dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt and not jit)
-        dataset = LoadRealSense2(width = 848, height = 480, fps = 30, img_size = imgsz) #best resolution for accuracy
+        dataset = LoadRealSense2(width, height, fps = 30, img_size = imgsz) 
         bs = len(dataset)  # batch_size
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt and not jit)
@@ -221,15 +218,11 @@ def detect(opt):
                         xc = np.array([])
                         vxc = np.array([])
                         vzc = np.array([])
-                        # obj = np.ones((1, 3))*1.0e5
-                        num_obj = 0
                         for j, (output, conf) in enumerate(zip(outputs, confs)):
                             x_m = output[0]
                             y_m = output[1]
                             z_m = output[4] 
                             xy = rs.rs2_project_point_to_pixel(color_intrin, [x_m, y_m, z_m])
-                            width = 848
-                            height = 480
                             vx = output[5] / (t1-t1b)
                             vz = output[9] / (t1-t1b)
                             w = output[2]
@@ -251,8 +244,6 @@ def detect(opt):
                             # Get first quartile z (where most likely the object blob is, 
                             # think of it like medians but more likely to pick the foreground object instead of the background)
                             z_ = np.percentile(zs, 25)
-                            print("z_")
-                            print(z_)
 
                             # Delete object points if less or greater than threshold
                             ## Threshold: z_ - 0.5 | z_ + 0.5
@@ -266,7 +257,7 @@ def detect(opt):
                             y = np.append(y, y0) #point cloud
                             z = np.append(z, z0) #point cloud
                             obj_len = np.append(obj_len, obj_len0)
-                            zc = np.append(zc, z_m) #z center
+                            zc = np.append(zc, z_) #z quartile
                             xc = np.append(xc, x_m) #x center
                             vxc =np.append(vxc, vx)
                             vzc =np.append(vzc, vz)
@@ -279,7 +270,7 @@ def detect(opt):
                                 # Write for visualization Live_Plot
                                 with open(txt_path, 'a') as f:
                                     f.write(('%g ' * 10 + '\n') % (frame_idx + 1, id, x_m,
-                                                            z_m, vx, vz, total_time, -1, -1, -1))
+                                                            z_, vx, vz, total_time, -1, -1, -1))
                                                                                   
                         # Publish message
                         msg.header.seq += 1
@@ -292,9 +283,6 @@ def detect(opt):
                         msg.zc = zc
                         msg.vxc = vxc
                         msg.vzc = vzc
-
-                        print('x,z = (',xc,zc,')')
-                        print('vx,vz = (',vxc,vzc,')')
                         
                         pub.publish(msg)
                     
